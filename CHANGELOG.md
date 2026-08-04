@@ -36,3 +36,4 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Agent loop core: Agent{LLM, Tools} flat loop, complete_task completion protocol (D37), in-run tool dedup (D32), no-progress stall, max-iter cap; provider client defaults the model when omitted
 - Adaptive OODA: flat loop by default, ONE orientation turn on thrash (tool errors, repeated same call, text-only no-progress), stall after orientation fails (D36)
 - delegate tool: subagent-as-a-tool, same Agent type in a goroutine, per-subagent provider via Resolver (D7, D8, D13)
+- Wayfinder: ticket 03 resolved (tools + agent loop); 04 (Context) is the frontier
