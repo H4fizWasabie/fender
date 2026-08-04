@@ -175,3 +175,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - `fender run <task>`: autonomous one-shot (reply + exit code by status)
 - `fender init`: memory workspace + fender.toml scaffold, idempotent
 - `fender` (no args): interactive REPL
+
+### Fixed
+- main_test: removed obsolete TestNoArgsShowsUsage (no-args now launches the REPL, covered by TestReplQuit)

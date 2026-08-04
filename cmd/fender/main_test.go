@@ -40,16 +40,6 @@ func TestProvidersCommand(t *testing.T) {
 	}
 }
 
-func TestNoArgsShowsUsage(t *testing.T) {
-	var out bytes.Buffer
-	if err := runCLI(&out, nil); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(out.String(), "usage") {
-		t.Fatalf("output = %q", out.String())
-	}
-}
-
 func TestRunCommand(t *testing.T) {
 	var out bytes.Buffer
 	err := runCLI(&out, []string{"run", "do something"})
