@@ -136,3 +136,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - codeintel store prune: paths were already absolute — Join doubled them, prune deleted every stamp (execution-caught)
 - codeintel graph: self-edge check moved after call resolution (A→A label resolves to self)
 - codeintel store test: extraction key is the absolute path, not relative
+
+### Added
+- Query API: Search (substring), Symbols(path), Callers/Callees; GenerateMap (ticket-05 schema)
+
+### Fixed
+- codeintel GenerateMap: sections are package dirs (internal/agent), not first path segment (plan code vs plan test inconsistency — resolved toward useful grouping)
