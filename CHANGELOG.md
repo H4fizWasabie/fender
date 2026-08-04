@@ -51,3 +51,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Adaptive OODA: flat loop by default, ONE orientation turn on thrash (tool errors, repeated same call, text-only no-progress), stall after orientation fails (D36)
 - delegate tool: subagent-as-a-tool, same Agent type in a goroutine, per-subagent provider via Resolver (D7, D8, D13)
 - Wayfinder: ticket 03 resolved (tools + agent loop); 04 (Context) is the frontier
+
+### Added
+- Ticket 05 spec approved: memory/ICM design (D39) — memory graph + consolidation deferred to D9 era
