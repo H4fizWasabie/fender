@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
+	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
@@ -34,6 +35,7 @@ type Agent struct {
 	MaxIter    int             // 0 -> defaultMaxIter
 	MaxSubIter int             // 0 -> defaultMaxSubIter
 	Ctx        *ctxpkg.Manager // D31 artifact layer; nil = ticket-03 behavior
+	Mem        *memory.Memory // D39 ICM memory workspace; nil = ticket-04 behavior
 	registry   *tools.Registry
 }
 
@@ -63,6 +65,11 @@ type Result struct {
 // ctx cancellation. Flat by default; on thrash (tool errors, repeated same
 // call, no progress) it injects ONE orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
+	if a.Mem != nil {
+		if b, err := a.Mem.Bootstrap(); err == nil {
+			a.System = b.System() + a.System // constitution first, then task-specific
+		}
+	}
 	if a.Ctx != nil {
 		a.Ctx.Cleanup(ctxpkg.SweepAge)
 		msgs = a.Ctx.For(a.System, msgs)

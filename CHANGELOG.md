@@ -69,3 +69,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Working memory: pruneWorking (7-day, patterns.md exempt) in Bootstrap; Working() catalog
+
+### Added
+- Agent wiring: nil-safe Mem — Bootstrap at Run start, memory system prepend, delegates share project memory
