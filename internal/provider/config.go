@@ -3,6 +3,7 @@ package provider
 
 // Config is the [providers] section of fender.toml.
 type Config struct {
+	Mode      string              `toml:"mode"` // permission mode: strict | balanced | yolo (D21)
 	Providers map[string]Provider `toml:"providers"`
 }
 

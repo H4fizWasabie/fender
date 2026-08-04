@@ -27,4 +27,7 @@ func TestDecodeConfig(t *testing.T) {
 	if openrouter.DefaultModel != "openai/gpt-4o-mini" {
 		t.Fatalf("default_model = %q", openrouter.DefaultModel)
 	}
+	if cfg.Mode != "balanced" {
+		t.Fatalf("mode = %q", cfg.Mode)
+	}
 }
