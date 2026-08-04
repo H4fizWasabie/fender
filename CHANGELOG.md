@@ -60,3 +60,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - `internal/memory`: Ensure() scaffold — .fender/{memory/{PROJECT.md,MAP.md,reference/,working/,facts/},skills/}, idempotent, seeded templates
+
+### Added
+- Convention detection: Detect() — user ~/.fender/AGENTS.md → project AGENTS.md (CLAUDE.md fallback) → CONTEXT.md; README/.cursorrules never auto-loaded
