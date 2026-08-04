@@ -58,6 +58,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D43 | **Consolidation (ticket 13) — D32 layer 6 delivered, unblocked by D9.** On session end (quit/EOF), if ≥4 exchanges and unconsolidated, the small model distills the log → durable facts (one .md file each in `.fender/memory/facts/`, reserved by D39) + one episode (appended to `.fender/memory/sessions/episodes.md`). JSON-only reply prompt (mino's), placeholder-filtered parse, session marked consolidated. Runs in a background goroutine; failures are silent (re-consolidated next session end). |
 
+| D44 | **Response caching revisit (D35 condition met) — stays deferred.** Real data: free model = $0 cost, stale-cache risk on the exact path that already broke (empty-role 400, protocol nags). Revisit only if paid reasoning models + profiled repeated identical calls. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

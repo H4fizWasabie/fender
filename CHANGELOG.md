@@ -242,3 +242,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - REPL polish (ticket 14): status colors (green/yellow/red), prompt shows mode + model (dimmed)
+
+### Changed
+- Wayfinder: tickets 13+14 resolved — consolidation + polish delivered; post-v1 review recorded (D44: response caching stays deferred with measured data)
