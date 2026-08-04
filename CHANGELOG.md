@@ -218,3 +218,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Session persistence (D41/ticket 10): save after every turn + quit, auto-resume latest, --new flag, fender sessions
+
+### Added
+- Ticket 11: Anthropic adapter spec (D42) — api = "anthropic", Messages API translation, SSE

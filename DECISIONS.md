@@ -54,6 +54,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D41 | **Session persistence (ticket 10) — D9 delivered.** REPL history persists to `.fender/sessions/<id>.json` (messages array); auto-save after every turn + on quit; `fender` auto-resumes the latest session (flag `--new` starts fresh); `fender sessions` lists them. Works with the artifact layer for free: history carries absolute artifact pointers and /tmp artifacts survive the 24h sweep window. Session files are user-local — `.fender/` is gitignored. |
 
+| D42 | **Anthropic adapter (ticket 11) — D6 delivered.** Provider config gains `api = "anthropic"`; a new `internal/provider/anthropic.go` implements the same `agent.LLM` interface (Chat + StreamChat via SSE) translating OpenAI-shaped `Request/Response` ↔ Anthropic Messages API (`/v1/messages`, `x-api-key` + `anthropic-version` headers, `content: [{type:text|tool_use|tool_result}]`, `stop_reason` mapping). v1: text + tool calls; no thinking blocks (reasoning stays OpenAI-side); system messages mapped to the `system` top-level field. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)
