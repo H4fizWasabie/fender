@@ -66,12 +66,12 @@ func (r *Registry) Schemas() []provider.ToolDef {
 	return out
 }
 
-// New returns the standard v1 registry. Tasks 3 and 4 extend it with the
-// shell and search tools.
+// New returns the standard v1 registry.
 func New(projectDir string, shell ShellConfig, searcher Searcher) *Registry {
 	r := &Registry{tools: make(map[string]Tool)}
 	r.Add(readTool(projectDir))
 	r.Add(editTool(projectDir))
+	r.Add(shellTool(shell))
 	return r
 }
 

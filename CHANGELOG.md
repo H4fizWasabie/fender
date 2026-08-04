@@ -31,3 +31,4 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Plan 3 (tools + loop): `docs/superpowers/plans/2026-08-04-fender-tools-loop.md` — read/edit/shell/search tools + ONE agent loop (complete_task, dedup, D36 orientation, delegate subagent) (8 tasks)
 - Tools core: Tool/Registry (JSON-arg dispatch, OpenAI schemas, subagent subsets via Without) + project path containment (D10)
 - read_file tool (1-based offset/limit line slices, project containment) + edit_file tool (unique exact-match replace, mode-preserving) (D10)
+- shell tool: Judge verdict wiring (REFUSE hard in all modes, ASK via injectable approver, RUN), audit every command, default 60s timeout, 64 KiB output cap (D11, D12, D24)
