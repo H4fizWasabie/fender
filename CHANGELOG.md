@@ -158,3 +158,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 08 spec: CLI + UI design — observer/streamer loop support, composition root, REPL, fender run/init (final ticket)
+
+### Added
+- Plan 8 (CLI+UI): `docs/superpowers/plans/2026-08-04-fender-cliui.md` — observer/streamer, composition root, REPL, run/init (5 tasks, final)
