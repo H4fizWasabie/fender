@@ -187,3 +187,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 09: thinking mode spec (D40) — pi-style levels, reasoning_effort, reasoning_content parsing, /thinking
+
+### Added
+- Plan 9 (thinking): `docs/superpowers/plans/2026-08-04-fender-thinking.md` (4 tasks)
