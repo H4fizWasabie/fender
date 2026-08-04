@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-// readCap is the v1 hard ceiling for read output. Plan 4 (artifact
-// engineering, D31) replaces the cap with artifact pointers.
+// readCap is the inline safety ceiling for read_file output. read_file is
+// never compacted (D31: its result is the explicit slice the model asked
+// for), so this cap is the only bound on inline size — it stays.
 const readCap = 1 << 20 // 1 MiB
 
 func readTool(projectDir string) Tool {

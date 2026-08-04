@@ -12,6 +12,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - `internal/context`: For() — budget arithmetic (system+Σmsgs ≤ ContextChars), turns truncation + marker, artifact catalog in context (D31)
 - `internal/agent`: loop wired to context layer — For() at ingress, CompactOutput on tool results, dedup caches pointers (D31)
 - `internal/agent`: delegate children get isolated context managers (D38)
+
+### Changed
+- `internal/tools`: shell output cap 64 KiB → 8 MiB (memory ceiling; artifact layer carries full output); read cap comment corrected (D38)
 - Design session (2026-08-04): full Fender design locked in `DECISIONS.md` (D1–D37) and `docs/superpowers/specs/2026-08-04-fender-design.md`
 - `AGENTS.md` — project constitution; every agent session must follow the decision log
 - `.githooks/pre-commit` — enforces the changelog rule; install with `git config core.hooksPath .githooks`

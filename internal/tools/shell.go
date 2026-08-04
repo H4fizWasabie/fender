@@ -10,9 +10,11 @@ import (
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 )
 
-// outputCap is the v1 ceiling for command output returned to the model.
-// Plan 4 (artifact engineering, D31) replaces it with artifact pointers.
-const outputCap = 64 << 10 // 64 KiB
+// outputCap bounds command output held in memory (8 MiB). Full output now
+// reaches the model via the artifact layer (D31/D38): anything over
+// InlineLimit becomes a pointer. This cap is a memory ceiling, not a
+// content limit — ticket-03's 64 KiB truncation was lossy and is gone.
+const outputCap = 8 << 20 // 8 MiB
 
 // ShellConfig is the guardrail wiring for the shell tool. Guardrails wrap
 // tool execution once (D13) — every agent passes through the same config.
