@@ -40,8 +40,11 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 | D28 | **Skills = ICM Layer 3 reference material.** Descriptions (17 × 1 line) ride in the always-loaded layer; bodies load selectively on trigger. |
 | D29 | **Skills never bypass the guardrail** — they're instructions, not execution. |
 | D30 | **ponytail = 18th bundled skill family (all 6)** — core ponytail is the **default always-loaded behavioral discipline** (Layer 0, rides in system prompt, governs all reasoning — the ladder before every task). Companions (ponytail-review, -audit, -debt, -gain, -help) bundled as model/user-invoked one-shots. MIT. |
+| D31 | **Conversation/tool-loop context methodology = mino's artifact engineering** (resolves Q5/D15): 1) **compress** — tool output > 8K chars → one-line artifact pointer, never inline; 2) **preserve head + tail** — large user input → HEAD/TAIL split inline, middle dropped; 3) **select** — model fetches slices via read_file(offset,limit), the one tool never compacted; artifact catalog rides in context; 4) **write elsewhere** — full content at isolated path, 0600, fetched on demand; 5) **isolate** — per-session/turn/tool dirs, stale pruning, maxAge sweep. Plus: turns-truncation with compaction markers, ContextFor budget arithmetic, completion reminders. mino's `context_test.go` = Fender's test suite blueprint. |
+| D32 | **Token-caching stack (5 layers)**: 1) provider prompt caching (stable system prompt prefix), 2) tool dedup within turn (`[already executed]`), 3) input preview/artifact pointer (8K rule), 4) turns truncation + markers, 5) background consolidation via small model. |
+| D33 | **Reference source #4: mino** (user's own project, local + oss) — port artifacts.go/session.go/context_test.go techniques directly. |
 
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)
-- Q5: **PENDING DISCUSSION — conversation/tool-loop context methodology** (D15). Thin interface in v1 (`internal/context`); methodology discussion happens later. This is the only remaining design topic on the agenda.
+- Q5: **resolved** — conversation/tool-loop context methodology = mino artifact engineering (D31). **No open design topics remain.**
