@@ -67,6 +67,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) e
 		if err != nil { // EOF
 			fmt.Fprintln(out)
 			state.save()
+			state.distill()
 			return nil
 		}
 		text := strings.TrimSpace(line)
@@ -80,6 +81,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) e
 			}
 			if quit {
 				state.save()
+				state.distill()
 				return nil
 			}
 			continue
@@ -122,6 +124,18 @@ type replState struct {
 	thinking string // "" = hidden (off); non-empty = show dimmed
 	session  *sessionFile
 	rebuild  func() error
+}
+
+// distill fires background consolidation at session end (D43).
+func (st *replState) distill() {
+	if st.session == nil || st.agent == nil {
+		return
+	}
+	if llm, ok := st.agent.LLM.(agentLLM); ok {
+		go func() {
+			consolidateSession(st.session, llm, ".")
+		}()
+	}
 }
 
 // save persists the current history (D41). Failures are non-fatal.

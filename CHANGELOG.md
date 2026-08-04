@@ -236,3 +236,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 13: consolidation spec (D43) — session-end distillation to facts/ + episodes
+
+### Added
+- Consolidation (D43/ticket 13): session-end small-model distillation → facts (dedup .md files) + episodes; background at quit/EOF

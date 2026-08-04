@@ -15,9 +15,10 @@ import (
 // absolute artifact pointers, so resumed sessions fetch slices identically
 // while /tmp artifacts survive the 24h sweep.
 type sessionFile struct {
-	ID       string             `json:"id"`
-	Started  string             `json:"started"`
-	Messages []provider.Message `json:"messages"`
+	ID           string             `json:"id"`
+	Started      string             `json:"started"`
+	Messages     []provider.Message `json:"messages"`
+	Consolidated bool               `json:"consolidated,omitempty"` // D43
 }
 
 func sessionsDir() (string, error) {
