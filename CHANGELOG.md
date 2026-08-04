@@ -93,3 +93,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - skills registry test: z lookup asserts ok=false (was wrongly expecting bundled source)
+
+### Added
+- Trigger matching: Match() — significant-word overlap >=2, top 3, 8K body budget, user-invoked skills excluded
