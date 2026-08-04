@@ -10,6 +10,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - `internal/context`: Manager core — 8K rule (CompactOutput), artifact write (0700/0600, per-call paths), catalog, 24h Cleanup sweep (D31/D38)
 - `internal/context`: CompactInput — HEAD/TAIL preservation for large user input (D31)
 - `internal/context`: For() — budget arithmetic (system+Σmsgs ≤ ContextChars), turns truncation + marker, artifact catalog in context (D31)
+- docs: wayfinder ticket 04 resolved (context artifact engineering complete)
 - `internal/agent`: loop wired to context layer — For() at ingress, CompactOutput on tool results, dedup caches pointers (D31)
 - `internal/agent`: delegate children get isolated context managers (D38)
 

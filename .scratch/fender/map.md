@@ -20,6 +20,7 @@ Fender v1: a working, from-scratch Go coding agent — single binary, OpenAI-com
 - [01-Foundation](issues/01-Foundation.md) — Plan 1 done: module, config types, chat client (non-streaming + SSE), registry, `fender providers` CLI; 3 plan bugs fixed (stream chunk panic, tool-call fragment merge, model fallback). Unblocks 02.
 - [02-Guardrail](issues/02-Guardrail.md) — Plan 2 done: modes/verdicts/8 detectors/Judge/audit/timeout, sh/v3@v3.10.0 pinned; 4 plan bugs fixed. Unblocks 03.
 - [03-ToolsAndLoop](issues/03-ToolsAndLoop.md) — Plan 3 done: tools (read_file/edit_file/shell with guardrail wiring/search with Searcher seam) + ONE agent loop (complete_task protocol, dedup, D36 orientation on thrash, delegate subagent-as-a-tool); provider client defaults model. Unblocks 04.
+- [04-Context](issues/04-Context.md) — Plan 4 done: internal/context artifact engineering (8K rule, HEAD/TAIL, For() budget arithmetic ≤ ContextChars, artifact catalog, 24h sweep, Child() isolation); loop wired; shell cap 8 MiB; budget-bound test first-class (acceptance #3). Unblocks 05.
 
 ## Not yet specified
 
