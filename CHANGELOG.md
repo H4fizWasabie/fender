@@ -164,3 +164,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Agent observer events (delta/tool/done) + optional Streamer interface; provider.Client.StreamChat; nil-safe, prior tests unchanged
+
+### Added
+- buildAgent: full subsystem wiring from fender.toml — default provider LLM, guardrail mode + audit file (~/.fender/audit.log), codeintel searcher (fallback default), skills merge, memory, context, resolver
