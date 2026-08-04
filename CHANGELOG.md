@@ -245,3 +245,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: tickets 13+14 resolved — consolidation + polish delivered; post-v1 review recorded (D44: response caching stays deferred with measured data)
+
+### Fixed
+- agent.Event JSON tags: dashboard SSE was marshaling uppercase field names — the browser switch (ev.kind) never matched, UI rendered nothing; regression test added

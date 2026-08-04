@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -100,5 +102,19 @@ func TestObserverThinkingEvent(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("thinking event missing: %+v", events)
+	}
+}
+
+func TestEventJSONTags(t *testing.T) {
+	// The dashboard SSE marshals events; the browser switches on lowercase
+	// keys — uppercase field names would render nothing (ticket-12 bug).
+	data, err := json.Marshal(Event{Kind: "done", Text: "r", Status: "complete"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"kind":"done"`, `"text":"r"`, `"status":"complete"`} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("event JSON missing %s: %s", want, data)
+		}
 	}
 }

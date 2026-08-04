@@ -22,10 +22,12 @@ type LLM interface {
 }
 
 // Event is one observable loop event (the renderer seam, ticket-08 spec §3.1).
+// JSON tags are load-bearing: the dashboard SSE (ticket 12) marshals events
+// and the browser switches on lowercase keys.
 type Event struct {
-	Kind   string // "delta" | "tool" | "done"
-	Text   string // delta text / tool description
-	Status string // tool status ("ok"|"error"|"cached") or result status
+	Kind   string `json:"kind"`   // "delta" | "thinking" | "tool" | "done"
+	Text   string `json:"text"`   // delta text / tool description / final reply
+	Status string `json:"status"` // tool status ("ok"|"error"|"cached") or result status
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
