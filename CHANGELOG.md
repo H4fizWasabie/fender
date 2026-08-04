@@ -221,3 +221,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 11: Anthropic adapter spec (D42) — api = "anthropic", Messages API translation, SSE
+
+### Added
+- Anthropic adapter (D42/ticket 11): api = "anthropic" provider — Messages API translation, SSE streaming, tool_use/tool_result blocks, thinking_delta mapping

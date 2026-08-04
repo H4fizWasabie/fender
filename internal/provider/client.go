@@ -73,9 +73,10 @@ type Client struct {
 	apiKey   string
 	model    string
 	models   []string
-	mc       ModelConfig // per-model config (thinking), zero when unset
-	thinking string      // reasoning_effort value to send; "" = off (omit)
-	http     *http.Client
+	mc        ModelConfig    // per-model config (thinking), zero when unset
+	thinking  string         // reasoning_effort value to send; "" = off (omit)
+	anthropic *anthropicWire // non-nil = Messages API transport (D42)
+	http      *http.Client
 }
 
 func New(name string, p Provider) *Client {
@@ -126,6 +127,9 @@ func (c *Client) SetThinking(level string) error {
 func (c *Client) Thinking() string { return c.thinking }
 
 func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
+	if c.anthropic != nil {
+		return c.anthropic.Chat(ctx, req)
+	}
 	if req.Model == "" {
 		req.Model = c.model // the loop sends no model; the client knows its own
 	}
@@ -170,6 +174,9 @@ type streamChunk struct {
 }
 
 func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), onThinking ...func(string)) (*Response, error) {
+	if c.anthropic != nil {
+		return c.anthropic.StreamChat(ctx, req, onDelta, onThinking...)
+	}
 	if req.Model == "" {
 		req.Model = c.model
 	}
