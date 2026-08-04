@@ -18,7 +18,10 @@ type LLM interface {
 	Chat(ctx context.Context, req provider.Request) (*provider.Response, error)
 }
 
-const defaultMaxIter = 30
+const (
+	defaultMaxIter    = 30
+	orientationPrompt = `(orientation turn — harness-enforced) Stop and orient before acting again. Reply with exactly four points: 1) what you know, 2) what is uncertain, 3) your hypothesis for the failures so far, 4) the single next distinct action. Do not repeat a failed or already-executed call.`
+)
 
 // Agent is one loop: model + tools + discipline. The same type runs the
 // parent and every subagent (D13).
@@ -42,8 +45,8 @@ type Result struct {
 }
 
 // Run executes the flat loop until complete_task, a stall, an error, or
-// ctx cancellation. msgs is the conversation so far; a.System is prepended
-// as the system message when set.
+// ctx cancellation. Flat by default; on thrash (tool errors, repeated same
+// call, no progress) it injects ONE orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	if a.System != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
 		msgs = append([]provider.Message{{Role: "system", Content: a.System}}, msgs...)
@@ -54,7 +57,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	}
 	dedup := map[string]string{} // D32 layer 1: tool dedup (whole run, mino behavior)
 	schemas := append(a.registry.Schemas(), completeSchema())
-	noProgress := 0
+	oriented := false
+	var errors, repeats, noProgress int
+	var lastKey string
 
 	for i := 1; i <= maxIter; i++ {
 		if ctx.Err() != nil {
@@ -83,7 +88,13 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 
 		if len(msg.ToolCalls) == 0 {
 			noProgress++
-			if noProgress >= 3 {
+			if !oriented && noProgress >= 3 {
+				msgs = append(msgs, orientationMessage())
+				oriented = true
+				noProgress = 0
+				continue
+			}
+			if oriented && noProgress >= 3 {
 				return &Result{Status: "stalled", Reply: "(stopped: repeated responses without completing the task)", Iterations: i}
 			}
 			msgs = append(msgs, provider.Message{Role: "user",
@@ -92,6 +103,8 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		}
 
 		// Act: execute each tool call; observe: feed results back.
+		progress := false
+		var executedKey string
 		for _, tc := range msg.ToolCalls {
 			if tc.Function.Name == completionToolName {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: completionError})
@@ -100,17 +113,47 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
 			if out, ok := dedup[key]; ok {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
+				executedKey = key // repeat detection: cached calls are not progress
 				continue
 			}
 			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
 			if err != nil {
+				errors++
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				continue
 			}
 			dedup[key] = out
 			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})
+			progress = true
+			executedKey = key
+		}
+
+		// Adaptive OODA (D36): flat by default; ONE orientation turn on
+		// thrash; a successful tool call resets the episode.
+		if progress {
+			oriented, errors, repeats, noProgress = false, 0, 0, 0
+			lastKey = ""
+			continue
+		}
+		if executedKey != "" && executedKey == lastKey {
+			repeats++
+		} else {
+			repeats = 0
+			lastKey = executedKey
+		}
+		if oriented && errors >= 2 {
+			return &Result{Status: "stalled", Reply: "(stopped: repeated tool failures after orientation)", Iterations: i}
+		}
+		if (errors >= 2 || repeats >= 2) && !oriented {
+			msgs = append(msgs, orientationMessage())
+			oriented = true
+			errors, repeats = 0, 0
 		}
 	}
 
 	return &Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter}
+}
+
+func orientationMessage() provider.Message {
+	return provider.Message{Role: "user", Content: orientationPrompt}
 }

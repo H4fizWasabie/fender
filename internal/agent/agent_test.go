@@ -188,8 +188,84 @@ func TestRunRejectsInvalidCompletion(t *testing.T) {
 }
 
 func TestRunStallsWithoutProgress(t *testing.T) {
+	// 3 text-only iterations -> one orientation turn; 3 more -> stall.
 	f := &fakeLLM{steps: []*provider.Response{
-		textReply("thinking..."), textReply("still thinking..."), textReply("hmm..."),
+		textReply("thinking..."), textReply("still..."), textReply("hmm..."),
+		textReply("again..."), textReply("again2..."), textReply("again3..."),
+	}}
+	a, _ := newTestAgent(t, f)
+	res := a.Run(context.Background(), nil)
+	if res.Status != "stalled" {
+		t.Fatalf("status = %q (want stalled)", res.Status)
+	}
+	oriented := 0
+	for _, m := range f.last().Messages { // full history: counts injected turns
+		if strings.Contains(m.Content, "orientation turn") {
+			oriented++
+		}
+	}
+	if oriented != 1 {
+		t.Fatalf("orientation turns = %d (want exactly 1)", oriented)
+	}
+}
+
+func TestRunOrientationOnToolError(t *testing.T) {
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_2", "read_file", `{"path":"nope.txt"}`),
+		completeReply("complete", "recovered"),
+	}}
+	a, _ := newTestAgent(t, f)
+	res := a.Run(context.Background(), nil)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	oriented := 0
+	for _, m := range f.last().Messages { // full history: counts injected turns
+		if strings.Contains(m.Content, "orientation turn") {
+			oriented++
+		}
+	}
+	if oriented != 1 {
+		t.Fatalf("orientation turns = %d (want exactly 1)", oriented)
+	}
+}
+
+func TestRunOrientationOnRepeatedCall(t *testing.T) {
+	// A successful call repeated with identical args hits the dedup cache
+	// ("[already executed]") — the second repeat triggers orientation.
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "read_file", `{"path":"a.txt"}`),
+		toolReply("call_2", "read_file", `{"path":"a.txt"}`),
+		toolReply("call_3", "read_file", `{"path":"a.txt"}`),
+		toolReply("call_4", "read_file", `{"path":"a.txt"}`),
+		completeReply("complete", "ok"),
+	}}
+	proj := t.TempDir()
+	os.WriteFile(filepath.Join(proj, "a.txt"), []byte("x"), 0o644)
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
+	a := NewAgent(f, reg)
+	res := a.Run(context.Background(), nil)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	oriented := 0
+	for _, m := range f.last().Messages { // full history: counts injected turns
+		if strings.Contains(m.Content, "orientation turn") {
+			oriented++
+		}
+	}
+	if oriented != 1 {
+		t.Fatalf("orientation turns = %d (want exactly 1)", oriented)
+	}
+}
+
+func TestRunStallsAfterOrientationOnErrors(t *testing.T) {
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_2", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_3", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_4", "read_file", `{"path":"nope.txt"}`),
 	}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
