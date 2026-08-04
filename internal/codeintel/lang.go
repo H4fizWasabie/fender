@@ -17,14 +17,14 @@ var specs = map[string]*langSpec{
 	"go": {
 		ext: []string{".go"},
 		symbol: map[string]string{
-			"func_declaration":   "func",
-			"method_declaration": "method",
-			"type_spec":          "type",
+			"function_declaration": "func",
+			"method_declaration":   "method",
+			"type_spec":            "type",
 		},
 		name: map[string]string{
-			"func_declaration":   "name",
-			"method_declaration": "name",
-			"type_spec":          "name",
+			"function_declaration": "name",
+			"method_declaration":   "name",
+			"type_spec":            "name",
 		},
 		calls:    []string{"call_expression"},
 		callName: "function",

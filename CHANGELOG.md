@@ -118,3 +118,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Added
 - codeintel skeleton: graphify node/edge schema, langSpec tables (go/python/typescript/javascript), specFor dispatch
 - Pinned tree-sitter deps: go-tree-sitter v0.24.0 + grammar pseudo-versions (go1.22 compatible, cgo)
+
+### Added
+- Extractor: ExtractFile — generic walker over langSpec tables, symbol nodes, calls (INFERRED) + imports (EXTRACTED) edges
+
+### Fixed
+- codeintel langSpec: Go symbol kind is "function_declaration" (tree-sitter), not "func_declaration" — plan doc corrected (execution-caught plan bug)

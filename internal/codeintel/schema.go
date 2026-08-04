@@ -15,6 +15,6 @@ type Node struct {
 type Edge struct {
 	Source     string `json:"source"`
 	Target     string `json:"target"`
-	Relation   string `json:"relation"`    // calls | imports | contains | module
+	Relation   string `json:"relation"`   // calls | imports | contains | module
 	Confidence string `json:"confidence"` // EXTRACTED | INFERRED
 }
