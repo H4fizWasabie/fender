@@ -53,7 +53,7 @@ func (a *Agent) delegateTool() tools.Tool {
 				MaxIter:    a.subIter(),
 				MaxSubIter: a.MaxSubIter,
 				registry:   a.registry.Without("delegate"),
-				Mem:        a.Mem, // D39: delegates share project memory (artifact context still isolated below)
+				Mem:        a.Mem,    // D39: delegates share project memory (artifact context still isolated below)
 				Skills:     a.Skills, // D27: delegates share the skill registry
 			}
 			if a.Ctx != nil {

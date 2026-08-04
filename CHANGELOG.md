@@ -4,6 +4,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ## [Unreleased]
 
+### Changed
+- gofmt: reformatted 6 files that had drifted (internal/agent/agent.go, internal/agent/delegate.go, internal/codeintel/store_test.go, internal/guardrail/verdict.go, internal/provider/client.go, internal/provider/config.go)
+
 ### Fixed
 - `fender run --config X` now honors the config file instead of falling back to ~/.fender/fender.toml (runTask threads configPath through to buildAgent); TestRunCommand pinned to a throwaway config so it never calls a real provider
 
@@ -212,3 +215,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 10: session persistence spec (D41) — history save/resume, artifact-pointer compatible
+
+### Added
+- Session persistence (D41/ticket 10): save after every turn + quit, auto-resume latest, --new flag, fender sessions

@@ -46,8 +46,8 @@ type Agent struct {
 	LLM        LLM
 	Resolver   Resolver // subagent provider selection (D7); nil -> inherit parent LLM
 	System     string
-	MaxIter    int             // 0 -> defaultMaxIter
-	MaxSubIter int             // 0 -> defaultMaxSubIter
+	MaxIter    int              // 0 -> defaultMaxIter
+	MaxSubIter int              // 0 -> defaultMaxSubIter
 	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
 	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
 	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior

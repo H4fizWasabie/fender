@@ -68,14 +68,14 @@ type Usage struct {
 // Client is one OpenAI-compatible endpoint. Not safe for concurrent use
 // beyond what http.Client provides.
 type Client struct {
-	name         string
-	base         string
-	apiKey       string
-	model        string
-	models       []string
-	mc           ModelConfig // per-model config (thinking), zero when unset
-	thinking     string      // reasoning_effort value to send; "" = off (omit)
-	http         *http.Client
+	name     string
+	base     string
+	apiKey   string
+	model    string
+	models   []string
+	mc       ModelConfig // per-model config (thinking), zero when unset
+	thinking string      // reasoning_effort value to send; "" = off (omit)
+	http     *http.Client
 }
 
 func New(name string, p Provider) *Client {

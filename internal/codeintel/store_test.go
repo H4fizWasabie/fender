@@ -20,10 +20,10 @@ func writeTree(t *testing.T, root string, files map[string]string) {
 func TestRefreshIncremental(t *testing.T) {
 	root := t.TempDir()
 	writeTree(t, root, map[string]string{
-		"main.go":          "package main\nfunc A() {}\n",
-		"notes.txt":        "ignore me",
-		".fender/x.txt":    "skip me",
-		"vendor/y.go":      "package y\nfunc Y() {}\n",
+		"main.go":           "package main\nfunc A() {}\n",
+		"notes.txt":         "ignore me",
+		".fender/x.txt":     "skip me",
+		"vendor/y.go":       "package y\nfunc Y() {}\n",
 		"node_modules/z.go": "package z\n",
 	})
 	s, err := Open(root)

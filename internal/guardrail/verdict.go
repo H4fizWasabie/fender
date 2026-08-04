@@ -26,9 +26,9 @@ func ParseMode(s string) (Mode, error) {
 type Verdict int
 
 const (
-	Run Verdict = iota // execute without asking
-	Ask                // prompt the user
-	Refuse             // never execute, in any mode (D22)
+	Run    Verdict = iota // execute without asking
+	Ask                   // prompt the user
+	Refuse                // never execute, in any mode (D22)
 )
 
 func (v Verdict) String() string {
