@@ -28,3 +28,4 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Guardrail audit log (JSON lines: command, verdict, timestamp) + DefaultTimeout 60s (D24)
 - Plan 2 (guardrail): `docs/superpowers/plans/2026-08-04-fender-guardrail.md` — modes, sh-parser verdicts, audit (5 tasks, mvdan.cc/sh/v3@v3.10.0 pinned for go 1.22)
 - Wayfinder map: `.scratch/fender/` — 8 build-phase tickets, 01 Foundation claimed, 02–08 blocked in AGENTS.md build order
+- Plan 3 (tools + loop): `docs/superpowers/plans/2026-08-04-fender-tools-loop.md` — read/edit/shell/search tools + ONE agent loop (complete_task, dedup, D36 orientation, delegate subagent) (8 tasks)
