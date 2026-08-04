@@ -72,3 +72,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Agent wiring: nil-safe Mem — Bootstrap at Run start, memory system prepend, delegates share project memory
+
+### Changed
+- Wayfinder: ticket 05 resolved — memory/ICM layers delivered; frontier → 06 (Skills)
