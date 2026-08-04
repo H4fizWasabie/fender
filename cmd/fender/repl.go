@@ -21,6 +21,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 	fmt.Fprintf(out, "fender %s — type /help for commands\n", version)
 
 	state := &replState{cfgPath: cfgPath, mode: guardrail.Balanced}
+	var streamed bool // any delta shown this run (reply may duplicate)
 	state.rebuild = func() error {
 		approver := func(cmd, reason string) (bool, error) {
 			fmt.Fprintf(out, "\n  [approval] %s\n  %s [y/N] ", reason, cmd)
@@ -35,6 +36,9 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 			return err
 		}
 		a.Observer = func(e agent.Event) {
+			if e.Kind == "delta" && e.Text != "" {
+				streamed = true
+			}
 			renderEvent(out, e, state.thinking != "")
 		}
 		state.agent = a
@@ -87,6 +91,10 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 		res := state.agent.Run(ctx, state.history)
 		close(done)
 		cancel()
+		if !streamed && res.Reply != "" {
+			fmt.Fprintln(out, res.Reply) // answer arrived via complete_task args, not deltas
+		}
+		streamed = false
 		if res.Status == "complete" || res.Status == "blocked" {
 			state.history = append(state.history, provider.Message{Role: "assistant", Content: res.Reply})
 		}

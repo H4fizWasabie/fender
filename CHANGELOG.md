@@ -197,3 +197,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - REPL: /thinking <off|low|medium|high> — reasoning_effort control + dimmed thinking rendering (hidden at off)
+
+### Added
+- Reply-on-done rendering: complete_task answers now display in the REPL (done event carries the reply; printed when no deltas streamed)
+- Wayfinder: ticket 09 resolved — thinking mode delivered (frontier: post-v1 backlog)

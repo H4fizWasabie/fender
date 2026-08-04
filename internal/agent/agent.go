@@ -272,10 +272,11 @@ func (a *Agent) chat(ctx context.Context, req provider.Request) (*provider.Respo
 	return resp, err
 }
 
-// finish emits the done event and returns the result.
+// finish emits the done event (reply carried for renderers that streamed
+// nothing) and returns the result.
 func (a *Agent) finish(res *Result) *Result {
 	if a.Observer != nil {
-		a.Observer(Event{Kind: "done", Status: res.Status})
+		a.Observer(Event{Kind: "done", Status: res.Status, Text: res.Reply})
 	}
 	return res
 }
