@@ -22,5 +22,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - `fender providers` CLI: lists configured providers, models, defaults; `--config` flag
 - Wayfinder: ticket 01 (Foundation) resolved — Plan 1 shipped; ticket 02 (Guardrail) claimed
 - Guardrail core types: strict/balanced/yolo modes, RUN/ASK/REFUSE verdicts, category x severity table; `mode` in fender.toml (D21, D23)
+- Guardrail parsing substrate: mvdan.cc/sh/v3 AST helpers (word literals, call names, arg extraction) — no regex (D23)
 - Plan 2 (guardrail): `docs/superpowers/plans/2026-08-04-fender-guardrail.md` — modes, sh-parser verdicts, audit (5 tasks, mvdan.cc/sh/v3@v3.10.0 pinned for go 1.22)
 - Wayfinder map: `.scratch/fender/` — 8 build-phase tickets, 01 Foundation claimed, 02–08 blocked in AGENTS.md build order
