@@ -167,3 +167,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - buildAgent: full subsystem wiring from fender.toml — default provider LLM, guardrail mode + audit file (~/.fender/audit.log), codeintel searcher (fallback default), skills merge, memory, context, resolver
+
+### Added
+- REPL: fender interactive mode — observer rendering (streaming deltas, tool lines), /quit /model /mode /skills /help, in-memory history
