@@ -1,0 +1,51 @@
+# Fender — Decision Log
+
+Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session — decisions only, no implementation yet.
+
+## Status: In discussion (context management pending)
+
+---
+
+## Locked Decisions
+
+| # | Decision |
+|---|----------|
+| D1 | **Build from scratch** — no agent frameworks. Just LLM API calls + own code. Language: **Golang**. |
+| D2 | **Shape**: terminal CLI first. Desktop GUI later — core stays UI-agnostic so a GUI can wrap it. |
+| D3 | **Open source** — motivation is control + learning, and sharing the harness with everyone. |
+| D4 | **Two modes**: interactive chat loop AND autonomous task mode ("fix this bug" → works until done). |
+| D5 | **One active LLM for v1**, but the model/provider layer is fully agnostic — works with any API key. |
+| D6 | **Provider layer v1: OpenAI-compatible only** (covers OpenRouter, Ollama, LM Studio, vLLM, local servers). Anthropic native adapter later, behind the same interface. |
+| D7 | **Provider-level config** (e.g. `.fender.json`) — each provider has its own key/base URL/model list. Subagents are told which provider/model to use. |
+| D8 | **Subagents with different providers = main feature.** Concurrency is a first-class design goal (Golang). |
+| D9 | **No session persistence in v1** — architecture keeps a seam to add it later. |
+| D10 | **Tools v1**: read file, edit file, shell + codebase search. Search keeps a backend seam so graphify / cce / codegraph plug in later. |
+| D11 | **Permission model**: ask before destructive only. The LLM gets full freedom — **the harness is the guardrail** (dangerous-pattern inspection of commands in code, not prompt-based). |
+| D12 | **Autonomous mode + risky command**: run stops, hands back partial results, asks. Interactive mode: inline prompt. |
+| D13 | **Architecture: Approach A — flat loop + subagent-as-a-tool.** One `Agent` type (Context + Model + Tools) running the loop. Spawning a subagent is just another tool; the harness runs the *same* loop in a child goroutine and returns the result as a tool result. Parallel subagents later = N goroutines, join. Guardrails wrap tool execution once, all agents pass through. |
+| D14 | **ICM is Fender's memory structure — the foundation.** Layered context files that *record what's in the codebase*: a navigation layer for the agent. Not just a context strategy — the memory architecture. |
+| D15 | **Conversation/tool-loop context engineering uses a different methodology, decided later.** Explicitly separated from the ICM memory layer. |
+| D16 | **Code-intel core built in Go from day one** — AST → symbols → index → graph → query API, all internal. graphify + cce (Python) + codegraph (Node/TS) will be downloaded, studied, mixed, and reimplemented into Go, baked into Fender. MAP.md (D14) is the front door; code-intel is the card catalog behind it. Check licenses before porting. |
+| D17 | **Memory architecture split**: ICM = navigation/memory layer (what's where, conventions). Code-intel = symbol layer (what symbols/functions/classes exist, call paths). Two layers, one query flow: MAP.md → code-intel. |
+| D18 | **Reference sources cloned to `~/Desktop/fender-references/`** — code-context-engine (cce), codegraph, graphify. All MIT — safe to port. |
+| D19 | **Parser substrate is shared**: tree-sitter C core + Go bindings. Reuse the same grammars codegraph ships (via go-tree-sitter); write tree-walking/extraction in Go. No parser rewriting. |
+| D20 | **graphify's pipeline is the code-intel module's reference architecture**: detect → extract → build → cluster → analyze → report → export; node/edge schema with EXTRACTED/INFERRED/AMBIGUOUS confidence labels. One Go package per stage. |
+| D21 | **Guardrail = configurable permission modes** (pi-styled): **strict** (ASK for every tool call), **balanced** (verdict model: RUN/ASK/REFUSE by category), **yolo** (no prompts). User's personal default: yolo. **Shipped default for others: balanced.** |
+| D22 | **REFUSE is hard in all modes** — even yolo never runs fork bombs, mkfs, shutdown, curl-pipe-to-shell, etc. YOLO removes questions, never the guardrail. |
+| D23 | **Guardrail parsing substrate: `mvdan.cc/sh/v3`** shell parser (AST, not regex). Judged categories: destructive filesystem (severity by target), privilege/system, irreversible git, pipe-to-shell, runaway/resource, TTY hangers, protected paths (secrets = ASK in balanced), path escape outside project dir. |
+| D24 | **Harness-level rules**: timeout on every command (configurable, ~60s default) + full audit log (command, verdict, timestamp). |
+| D25 | **Config file: TOML** (`.fender.toml`), scaffolded by `fender init`. Holds provider registry (per-provider key/base URL/models), permission mode, tool settings. |
+| D26 | **Terminal UX: plain streaming transcript** — minimal ANSI color, visible tool-call lines, readable approval prompts, slash commands (/model, /mode, /tool, /quit). No TUI now — render layer stays thin since the GUI (D2) supersedes it. |
+| D27 | **Skill system**: SKILL.md format (name/description frontmatter). **All 17 engineering skills from mattpocock/skills embedded in the binary** (go:embed, MIT, ~1,200 lines). Model-invoked (description matching in system prompt) + user-invoked (/tdd, /code-review...). `fender skill install <repo|path>` for external skills. Lookup order: project `.fender/skills/` → user `~/.fender/skills/` → bundled. |
+| D28 | **Skills = ICM Layer 3 reference material.** Descriptions (17 × 1 line) ride in the always-loaded layer; bodies load selectively on trigger. |
+| D29 | **Skills never bypass the guardrail** — they're instructions, not execution. |
+| D30 | **ponytail = 18th bundled skill family (all 6)** — core ponytail is the **default always-loaded behavioral discipline** (Layer 0, rides in system prompt, governs all reasoning — the ladder before every task). Companions (ponytail-review, -audit, -debt, -gain, -help) bundled as model/user-invoked one-shots. MIT. |
+
+## Open Questions
+
+- Q1: (in discussion) — concrete ICM memory layers for Fender (file names, what's always loaded, where memory lives)
+- Q2: (pending) — guardrail rules list details
+- Q3: (pending) — config file format (TOML vs JSON vs YAML)
+- Q4: (pending) — terminal UX details (streaming, rendering)
+- Q5: (pending) — conversation/tool-loop context methodology (deferred by D15)
+- Q6: (pending) — repo name confirmed?
