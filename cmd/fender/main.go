@@ -34,13 +34,14 @@ func run(out io.Writer, args []string) int {
 func runCLI(out io.Writer, args []string) error {
 	fs := flag.NewFlagSet("fender", flag.ContinueOnError)
 	configPath := fs.String("config", "", "path to fender.toml (default: ./fender.toml, then ~/.fender/fender.toml)")
+	fresh := fs.Bool("new", false, "start a fresh session (don't resume)")
 	fs.SetOutput(out)
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() == 0 {
-		// interactive REPL (D26)
-		return repl(out, out, bufio.NewReader(os.Stdin), *configPath)
+		// interactive REPL (D26), resumes latest session unless --new (D41)
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *fresh)
 	}
 	switch fs.Arg(0) {
 	case "providers":
@@ -57,7 +58,18 @@ func runCLI(out io.Writer, args []string) error {
 	case "intel":
 		return intelCommand(out, fs.Args()[1:])
 	case "repl":
-		return repl(out, out, bufio.NewReader(os.Stdin), *configPath)
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *fresh)
+	case "sessions":
+		files, err := listSessions()
+		if err != nil {
+			return err
+		}
+		if len(files) == 0 {
+			fmt.Fprintln(out, "no sessions")
+			return nil
+		}
+		fmt.Fprint(out, formatSessions(files))
+		return nil
 	default:
 		return fmt.Errorf("unknown command %q", fs.Arg(0))
 	}

@@ -12,7 +12,7 @@ import (
 func TestReplQuit(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/quit\n"))
-	if err := repl(&out, &errOut, in, ""); err != nil {
+	if err := repl(&out, &errOut, in, "", true); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "fender") {
@@ -23,7 +23,7 @@ func TestReplQuit(t *testing.T) {
 func TestReplHelp(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/help\n/quit\n"))
-	if err := repl(&out, &errOut, in, ""); err != nil {
+	if err := repl(&out, &errOut, in, "", true); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "/quit") || !strings.Contains(out.String(), "/mode") {
@@ -34,7 +34,7 @@ func TestReplHelp(t *testing.T) {
 func TestReplUnknownSlash(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/nope\n/quit\n"))
-	if err := repl(&out, &errOut, in, ""); err != nil {
+	if err := repl(&out, &errOut, in, "", true); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "unknown command") {
@@ -45,7 +45,7 @@ func TestReplUnknownSlash(t *testing.T) {
 func TestReplModelUnknown(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/model does-not-exist\n/quit\n"))
-	if err := repl(&out, &errOut, in, ""); err != nil {
+	if err := repl(&out, &errOut, in, "", true); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "error:") {
@@ -69,7 +69,7 @@ func TestRenderEventThinkingDimmed(t *testing.T) {
 func TestReplThinkingUnknownLevel(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/thinking nope\n/quit\n"))
-	if err := repl(&out, &errOut, in, ""); err != nil {
+	if err := repl(&out, &errOut, in, "", true); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "invalid level") {

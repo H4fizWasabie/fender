@@ -5,6 +5,11 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ## [Unreleased]
 
 ### Added
+- Session persistence (ticket 10, D41): `fender sessions` lists saved sessions; `fender` resumes the latest session, `fender --new` starts fresh; history saved atomically after every REPL turn and on /quit to `.fender/sessions/<id>.json` (timestamp IDs)
+- `cmd/fender/session.go`: sessionFile schema, saveSession (temp+rename), loadLatestSession, listSessions (newest first); artifact-pointer compatibility documented (zero code — history carries absolute /tmp pointers that survive the 24h sweep)
+- Wayfinder: ticket 10 resolved — session persistence delivered (deferred post-v1 list: Anthropic adapter, GUI, TUI, response caching)
+
+### Added
 - Spec: `docs/superpowers/specs/2026-08-04-fender-context-design.md` — ticket 04 design: internal/context artifact engineering (D31 port) + D38 in DECISIONS.md (artifact root /tmp, per-agent managers, cap policy, D9 migration seam)
 - Plan: `docs/superpowers/plans/2026-08-04-fender-context.md` — ticket 04 implementation plan (7 tasks, test-first; budget-bound test as first-class task, acceptance #3)
 - `internal/context`: Manager core — 8K rule (CompactOutput), artifact write (0700/0600, per-call paths), catalog, 24h Cleanup sweep (D31/D38)

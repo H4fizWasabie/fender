@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
@@ -17,10 +18,17 @@ import (
 
 // repl is the interactive loop (D26): slash commands + Agent.Run with
 // observer rendering. History lives in memory for the session (D9).
-func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
+func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) error {
 	fmt.Fprintf(out, "fender %s — type /help for commands\n", version)
 
 	state := &replState{cfgPath: cfgPath, mode: guardrail.Balanced}
+	if !fresh {
+		if prev, err := loadLatestSession(); err == nil && prev != nil {
+			state.history = prev.Messages
+			fmt.Fprintf(out, "resumed session %s (%d messages)\n", prev.ID, len(prev.Messages))
+		}
+	}
+	state.session = &sessionFile{ID: newSessionID(), Started: time.Now().Format(time.RFC3339)}
 	var streamed bool // any delta shown this run (reply may duplicate)
 	state.rebuild = func() error {
 		approver := func(cmd, reason string) (bool, error) {
@@ -58,6 +66,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 		line, err := in.ReadString('\n')
 		if err != nil { // EOF
 			fmt.Fprintln(out)
+			state.save()
 			return nil
 		}
 		text := strings.TrimSpace(line)
@@ -70,6 +79,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 				fmt.Fprintf(out, "error: %v\n", err)
 			}
 			if quit {
+				state.save()
 				return nil
 			}
 			continue
@@ -98,6 +108,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 		if res.Status == "complete" || res.Status == "blocked" {
 			state.history = append(state.history, provider.Message{Role: "assistant", Content: res.Reply})
 		}
+		state.save() // persist after every turn (D41)
 	}
 }
 
@@ -109,7 +120,17 @@ type replState struct {
 	skills   *skills.Registry
 	history  []provider.Message
 	thinking string // "" = hidden (off); non-empty = show dimmed
+	session  *sessionFile
 	rebuild  func() error
+}
+
+// save persists the current history (D41). Failures are non-fatal.
+func (st *replState) save() {
+	if st.session == nil {
+		return
+	}
+	st.session.Messages = st.history
+	saveSession(st.session) // ignore errors — persistence is best-effort
 }
 
 // slash handles one slash command; returns quit=true for /quit.

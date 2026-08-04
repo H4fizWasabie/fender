@@ -1,2 +1,3 @@
 .fender/
 fender.toml
+/cmd/fender/fender
