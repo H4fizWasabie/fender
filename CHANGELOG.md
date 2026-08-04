@@ -57,3 +57,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Plan 5 (memory): `docs/superpowers/plans/2026-08-04-fender-memory.md` — workspace scaffold, convention detection, System assembly, working prune, agent wiring (6 tasks)
+
+### Added
+- `internal/memory`: Ensure() scaffold — .fender/{memory/{PROJECT.md,MAP.md,reference/,working/,facts/},skills/}, idempotent, seeded templates
