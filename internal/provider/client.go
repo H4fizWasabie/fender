@@ -13,10 +13,11 @@ import (
 )
 
 type Message struct {
-	Role       string     `json:"role"`
-	Content    string     `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Role             string     `json:"role"`
+	Content          string     `json:"content"`
+	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID       string     `json:"tool_call_id,omitempty"`
 }
 
 type ToolCall struct {
@@ -42,11 +43,12 @@ type ToolFunctionDef struct {
 }
 
 type Request struct {
-	Model     string    `json:"model"`
-	Messages  []Message `json:"messages"`
-	Tools     []ToolDef `json:"tools,omitempty"`
-	Stream    bool      `json:"stream,omitempty"`
-	MaxTokens int       `json:"max_tokens,omitempty"`
+	Model           string    `json:"model"`
+	Messages        []Message `json:"messages"`
+	Tools           []ToolDef `json:"tools,omitempty"`
+	Stream          bool      `json:"stream,omitempty"`
+	MaxTokens       int       `json:"max_tokens,omitempty"`
+	ReasoningEffort string    `json:"reasoning_effort,omitempty"`
 }
 
 type Response struct {
@@ -66,12 +68,14 @@ type Usage struct {
 // Client is one OpenAI-compatible endpoint. Not safe for concurrent use
 // beyond what http.Client provides.
 type Client struct {
-	name   string
-	base   string
-	apiKey string
-	model  string
-	models []string
-	http   *http.Client
+	name         string
+	base         string
+	apiKey       string
+	model        string
+	models       []string
+	mc           ModelConfig // per-model config (thinking), zero when unset
+	thinking     string      // reasoning_effort value to send; "" = off (omit)
+	http         *http.Client
 }
 
 func New(name string, p Provider) *Client {
@@ -85,6 +89,7 @@ func New(name string, p Provider) *Client {
 		apiKey: p.APIKey,
 		model:  model,
 		models: p.Models,
+		mc:     p.ModelConfigs[model],
 		http:   &http.Client{Timeout: 5 * time.Minute},
 	}
 }
@@ -94,9 +99,38 @@ func (c *Client) Model() string    { return c.model }
 func (c *Client) BaseURL() string  { return c.base }
 func (c *Client) Models() []string { return c.models }
 
+// SetThinking sets the reasoning_effort level (D40). "" = off (field
+// omitted — provider default thinking). Validates against the model's
+// thinking_levels map: a level mapped to "" (null) is unsupported; models
+// with thinking=false reject every level.
+func (c *Client) SetThinking(level string) error {
+	if level == "" {
+		c.thinking = ""
+		return nil
+	}
+	if !c.mc.Thinking {
+		return fmt.Errorf("model %s does not support thinking (add model_configs.%s.thinking = true)", c.model, c.model)
+	}
+	value := level
+	if v, ok := c.mc.ThinkingLevels[level]; ok {
+		value = v
+	}
+	if value == "" {
+		return fmt.Errorf("thinking level %q unsupported by %s", level, c.model)
+	}
+	c.thinking = value
+	return nil
+}
+
+// Thinking returns the active reasoning_effort value ("" = off).
+func (c *Client) Thinking() string { return c.thinking }
+
 func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 	if req.Model == "" {
 		req.Model = c.model // the loop sends no model; the client knows its own
+	}
+	if c.thinking != "" {
+		req.ReasoningEffort = c.thinking
 	}
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -128,15 +162,19 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 type streamChunk struct {
 	Choices []struct {
 		Delta struct {
-			Content   string     `json:"content"`
-			ToolCalls []ToolCall `json:"tool_calls"`
+			Content          string     `json:"content"`
+			ReasoningContent string     `json:"reasoning_content"`
+			ToolCalls        []ToolCall `json:"tool_calls"`
 		} `json:"delta"`
 	} `json:"choices"`
 }
 
-func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string)) (*Response, error) {
+func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), onThinking ...func(string)) (*Response, error) {
 	if req.Model == "" {
 		req.Model = c.model
+	}
+	if c.thinking != "" {
+		req.ReasoningEffort = c.thinking
 	}
 	req.Stream = true
 	body, err := json.Marshal(req)
@@ -185,6 +223,12 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string)) 
 				msg.Content += ch.Delta.Content
 				onDelta(ch.Delta.Content)
 			}
+			if ch.Delta.ReasoningContent != "" {
+				msg.ReasoningContent += ch.Delta.ReasoningContent
+				if len(onThinking) > 0 {
+					onThinking[0](ch.Delta.ReasoningContent)
+				}
+			}
 			for i, tc := range ch.Delta.ToolCalls {
 				if i >= len(tcBuf) {
 					tcBuf = append(tcBuf, make([]ToolCall, i+1-len(tcBuf))...)
@@ -214,6 +258,6 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string)) 
 
 // StreamChat implements agent.Streamer: streams deltas, accumulates the
 // full response (tool calls included).
-func (c *Client) StreamChat(ctx context.Context, req Request, onDelta func(string)) (*Response, error) {
-	return c.Stream(ctx, req, onDelta)
+func (c *Client) StreamChat(ctx context.Context, req Request, onDelta func(string), onThinking ...func(string)) (*Response, error) {
+	return c.Stream(ctx, req, onDelta, onThinking...)
 }

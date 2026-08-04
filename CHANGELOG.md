@@ -190,3 +190,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Plan 9 (thinking): `docs/superpowers/plans/2026-08-04-fender-thinking.md` (4 tasks)
+
+### Added
+- Thinking wire format: reasoning_content parsed (stream + non-stream), reasoning_effort per level, per-model model_configs (thinking/thinking_levels), Client.SetThinking
+- Observer thinking events (Streamer onThinking, dimmed-ready)

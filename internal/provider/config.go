@@ -9,8 +9,15 @@ type Config struct {
 
 // Provider is one OpenAI-compatible endpoint (OpenRouter, Ollama, LM Studio, ...).
 type Provider struct {
-	BaseURL      string   `toml:"base_url"`
-	APIKey       string   `toml:"api_key"`
-	Models       []string `toml:"models"`
-	DefaultModel string   `toml:"default_model"`
+	BaseURL      string                  `toml:"base_url"`
+	APIKey       string                  `toml:"api_key"`
+	Models       []string                `toml:"models"`
+	DefaultModel string                  `toml:"default_model"`
+	ModelConfigs map[string]ModelConfig  `toml:"model_configs"`
+}
+
+// ModelConfig is per-model thinking configuration (D40).
+type ModelConfig struct {
+	Thinking       bool              `toml:"thinking"`
+	ThinkingLevels map[string]string `toml:"thinking_levels"` // pi-level → provider value; "" = unsupported (null); omission = identity
 }

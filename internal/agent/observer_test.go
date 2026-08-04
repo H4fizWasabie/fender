@@ -11,9 +11,12 @@ type streamFake struct {
 	*fakeLLM
 }
 
-func (s *streamFake) StreamChat(ctx context.Context, req provider.Request, onDelta func(string)) (*provider.Response, error) {
+func (s *streamFake) StreamChat(ctx context.Context, req provider.Request, onDelta func(string), onThinking ...func(string)) (*provider.Response, error) {
 	for _, d := range []string{"hel", "lo"} {
 		onDelta(d)
+	}
+	if len(onThinking) > 0 {
+		onThinking[0]("hmm...")
 	}
 	return completeReply("complete", "done"), nil
 }
@@ -79,5 +82,23 @@ func TestObserverToolEvent(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("tool event missing: %+v", events)
+	}
+}
+
+func TestObserverThinkingEvent(t *testing.T) {
+	fake := &fakeLLM{steps: []*provider.Response{completeReply("complete", "done")}}
+	sf := &streamFake{fakeLLM: fake}
+	a := NewAgent(sf, newTestRegistry(t))
+	var events []Event
+	a.Observer = func(e Event) { events = append(events, e) }
+	a.Run(context.Background(), []provider.Message{{Role: "user", Content: "go"}})
+	found := false
+	for _, e := range events {
+		if e.Kind == "thinking" && e.Text == "hmm..." {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("thinking event missing: %+v", events)
 	}
 }

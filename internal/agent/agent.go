@@ -29,8 +29,9 @@ type Event struct {
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
+// onThinking receives reasoning deltas when the provider streams them (D40).
 type Streamer interface {
-	StreamChat(ctx context.Context, req provider.Request, onDelta func(string)) (*provider.Response, error)
+	StreamChat(ctx context.Context, req provider.Request, onDelta func(string), onThinking ...func(string)) (*provider.Response, error)
 }
 
 const (
@@ -256,13 +257,17 @@ func (a *Agent) loadSkillTool() tools.Tool {
 // chat calls the LLM, streaming deltas through the observer when possible.
 func (a *Agent) chat(ctx context.Context, req provider.Request) (*provider.Response, error) {
 	if st, ok := a.LLM.(Streamer); ok && a.Observer != nil {
-		return st.StreamChat(ctx, req, func(d string) {
-			a.Observer(Event{Kind: "delta", Text: d})
-		})
+		return st.StreamChat(ctx, req,
+			func(d string) { a.Observer(Event{Kind: "delta", Text: d}) },
+			func(d string) { a.Observer(Event{Kind: "thinking", Text: d}) },
+		)
 	}
 	resp, err := a.LLM.Chat(ctx, req)
 	if err == nil && a.Observer != nil && len(resp.Choices) > 0 {
 		a.Observer(Event{Kind: "delta", Text: resp.Choices[0].Message.Content})
+		if rc := resp.Choices[0].Message.ReasoningContent; rc != "" {
+			a.Observer(Event{Kind: "thinking", Text: rc})
+		}
 	}
 	return resp, err
 }
