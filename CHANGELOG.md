@@ -54,3 +54,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 05 spec approved: memory/ICM design (D39) — memory graph + consolidation deferred to D9 era
+
+### Added
+- Plan 5 (memory): `docs/superpowers/plans/2026-08-04-fender-memory.md` — workspace scaffold, convention detection, System assembly, working prune, agent wiring (6 tasks)
