@@ -248,3 +248,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - agent.Event JSON tags: dashboard SSE was marshaling uppercase field names — the browser switch (ev.kind) never matched, UI rendered nothing; regression test added
+
+### Fixed
+- Dashboard rendering: deltas accumulate into one element per stream (was one div per SSE chunk = word-per-line); thinking whitespace collapsed; show-thinking toggle

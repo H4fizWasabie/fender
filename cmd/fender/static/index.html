@@ -21,7 +21,7 @@
 </style>
 </head>
 <body>
-<h1>fender — dashboard</h1>
+<h1>fender — dashboard <label style="font-weight:normal;font-size:12px;margin-left:12px"><input type="checkbox" id="showThinking" checked> show thinking</label></h1>
 <div id="log"></div>
 <div id="inputbar">
   <input id="input" placeholder="type a task…" autofocus>
@@ -41,20 +41,43 @@ function append(cls, text) {
   return div;
 }
 
-// SSE: live observer events
+// SSE: live observer events. Deltas accumulate into ONE element per
+// stream — a div per delta was one word per line (ticket-12b).
 const es = new EventSource('/api/events');
+let current = null; // the running assistant/thinking element
+
+function ensure(kind) {
+  if (!current || current.dataset.kind !== kind) {
+    current = append(kind, '');
+    current.dataset.kind = kind;
+  }
+  return current;
+}
+
 es.onmessage = (e) => {
   const ev = JSON.parse(e.data);
   switch (ev.kind) {
-    case 'delta': append('assistant', ev.text); break;
-    case 'thinking': append('thinking', ev.text); break;
-    case 'tool': append('tool', '[tool ' + ev.text + ': ' + (ev.status || 'ok') + ']'); break;
+    case 'delta':
+      ensure('assistant').textContent += ev.text;
+      break;
+    case 'thinking':
+      if (!document.getElementById('showThinking').checked) break;
+      // collapse mid-word whitespace fragments ("Pon\nyt\nail") — thinking
+      // is stream-of-consciousness, not formatting
+      ensure('thinking').textContent += ev.text.replace(/\s+/g, ' ');
+      break;
+    case 'tool':
+      current = null;
+      append('tool', '[tool ' + ev.text + ': ' + (ev.status || 'ok') + ']');
+      break;
     case 'done':
+      current = null;
       append('status' + (ev.status === 'complete' ? '' : '.' + ev.status), '<' + ev.status + '>');
       if (ev.text) append('assistant', ev.text); // reply via complete_task args
       send.disabled = false;
       break;
   }
+  log.scrollTop = log.scrollHeight;
 };
 
 async function submit() {
