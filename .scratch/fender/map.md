@@ -17,6 +17,8 @@ Fender v1: a working, from-scratch Go coding agent — single binary, OpenAI-com
 
 <!-- the index — one line per closed ticket: gist + link -->
 
+- [01-Foundation](issues/01-Foundation.md) — Plan 1 done: module, config types, chat client (non-streaming + SSE), registry, `fender providers` CLI; 3 plan bugs fixed (stream chunk panic, tool-call fragment merge, model fallback). Unblocks 02.
+
 ## Not yet specified
 
 - Code-intel incremental index mechanics — biggest unknown; sharpens when Plan 7 starts (graphify pipeline port).
