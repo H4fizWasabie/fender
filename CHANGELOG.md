@@ -11,3 +11,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - AGENTS.md: added `BurntSushi/toml` to the allowed dependency list (D25 config implementation)
+
+### Added
+- Plan 1 (foundation): `docs/superpowers/plans/2026-08-04-fender-foundation.md` — module, fender.toml config, OpenAI-compatible provider client, registry, `fender providers` CLI (6 tasks)
