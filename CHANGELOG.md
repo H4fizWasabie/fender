@@ -75,3 +75,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: ticket 05 resolved — memory/ICM layers delivered; frontier → 06 (Skills)
+
+### Added
+- Ticket 06 spec: skills design (D27-D30 implementation) — go:embed 23 skills, regex frontmatter parser, word-overlap matching, shadowing, load_skill tool, skill install
