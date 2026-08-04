@@ -43,9 +43,5 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 ## Open Questions
 
-- Q1: (in discussion) — concrete ICM memory layers for Fender (file names, what's always loaded, where memory lives)
-- Q2: (pending) — guardrail rules list details
-- Q3: (pending) — config file format (TOML vs JSON vs YAML)
-- Q4: (pending) — terminal UX details (streaming, rendering)
-- Q5: (pending) — conversation/tool-loop context methodology (deferred by D15)
-- Q6: (pending) — repo name confirmed?
+- Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)
+- Q5: **PENDING DISCUSSION — conversation/tool-loop context methodology** (D15). Thin interface in v1 (`internal/context`); methodology discussion happens later. This is the only remaining design topic on the agenda.
