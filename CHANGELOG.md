@@ -84,3 +84,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Vendored 23 bundled skills into internal/skills/bundled/ (MIT, attribution; Codex yaml excluded)
+
+### Added
+- Skills: frontmatter parser (single-line/quoted/folded, disable-model-invocation), Bundled() go:embed loader — all 23 parse
