@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/H4fizWasabie/fender/internal/codeintel"
+	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/skills"
 )
@@ -38,6 +40,9 @@ func runCLI(out io.Writer, args []string) error {
 		fmt.Fprintln(out, "usage: fender [--config PATH] <command>")
 		fmt.Fprintln(out, "  providers          list configured providers")
 		fmt.Fprintln(out, "  skill install SRC  install skills from a local path or git URL")
+		fmt.Fprintln(out, "  intel refresh      incremental code index")
+		fmt.Fprintln(out, "  intel search Q     symbol search")
+		fmt.Fprintln(out, "  intel map          generate MAP.md into .fender/memory/")
 		return nil
 	}
 	switch fs.Arg(0) {
@@ -45,6 +50,8 @@ func runCLI(out io.Writer, args []string) error {
 		return listProviders(out, *configPath)
 	case "skill":
 		return skillCommand(out, fs.Args()[1:])
+	case "intel":
+		return intelCommand(out, fs.Args()[1:])
 	default:
 		return fmt.Errorf("unknown command %q", fs.Arg(0))
 	}
@@ -72,6 +79,60 @@ func installSkills(out io.Writer, src string) error {
 		return err
 	}
 	fmt.Fprintf(out, "installed %d skill(s): %s\n", len(names), strings.Join(names, ", "))
+	return nil
+}
+
+func intelCommand(out io.Writer, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: fender intel <refresh|search|map>")
+	}
+	s, err := codeintel.Open(".")
+	if err != nil {
+		return err
+	}
+	switch args[0] {
+	case "refresh":
+		n, err := s.Refresh()
+		if err != nil {
+			return err
+		}
+		if _, err := s.Rebuild(); err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "refreshed %d file(s)\n", n)
+	case "search":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: fender intel search <query>")
+		}
+		searcher := s.Searcher()
+		res, err := searcher(strings.Join(args[1:], " "))
+		if err != nil {
+			return err
+		}
+		for _, r := range res {
+			fmt.Fprintf(out, "%s:%d: %s\n", r.Path, r.Line, r.Text)
+		}
+	case "map":
+		if _, err := s.Refresh(); err != nil {
+			return err
+		}
+		g, err := s.Rebuild()
+		if err != nil {
+			return err
+		}
+		body := g.GenerateMap()
+		mem := memory.New(".")
+		if err := mem.Ensure(); err != nil {
+			return err
+		}
+		mapPath := filepath.Join(".fender", "memory", "MAP.md")
+		if err := os.WriteFile(mapPath, []byte(body), 0600); err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "wrote %s\n", mapPath)
+	default:
+		return fmt.Errorf("unknown intel command %q", args[0])
+	}
 	return nil
 }
 

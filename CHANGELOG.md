@@ -142,3 +142,10 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - codeintel GenerateMap: sections are package dirs (internal/agent), not first path segment (plan code vs plan test inconsistency — resolved toward useful grouping)
+
+### Added
+- `fender intel refresh|search|map`: incremental index, symbol search, MAP.md generation; Searcher adapter for the D10 seam
+
+### Fixed
+- codeintel searcher: SourceFile already absolute — removed double Join (execution-caught)
+- intel map: Ensure() memory workspace before writing MAP.md
