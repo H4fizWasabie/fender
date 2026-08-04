@@ -155,3 +155,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Pinned tree-sitter dependency versions in go.mod (go1.22-compatible set)
+
+### Added
+- Ticket 08 spec: CLI + UI design — observer/streamer loop support, composition root, REPL, fender run/init (final ticket)
