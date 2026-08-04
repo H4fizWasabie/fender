@@ -66,6 +66,15 @@ func (r *Registry) Schemas() []provider.ToolDef {
 	return out
 }
 
+// New returns the standard v1 registry. Tasks 3 and 4 extend it with the
+// shell and search tools.
+func New(projectDir string, shell ShellConfig, searcher Searcher) *Registry {
+	r := &Registry{tools: make(map[string]Tool)}
+	r.Add(readTool(projectDir))
+	r.Add(editTool(projectDir))
+	return r
+}
+
 // Execute runs one tool by name with JSON-encoded args.
 func (r *Registry) Execute(ctx context.Context, name, argsJSON string) (string, error) {
 	t, ok := r.tools[name]
