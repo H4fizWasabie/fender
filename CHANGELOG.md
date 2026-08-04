@@ -20,7 +20,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Streaming client: Stream() with SSE parsing, content deltas via callback, tool-call accumulation
 - Provider registry: fender.toml loading (./ then ~/.fender/), client lookup, default provider
 - `fender providers` CLI: lists configured providers, models, defaults; `--config` flag
-- Wayfinder: ticket 01 (Foundation) resolved — Plan 1 shipped; ticket 02 (Guardrail) claimed
+- Wayfinder: tickets 01-02 resolved (Foundation, Guardrail); 03 (Tools+Loop) is the frontier
 - Guardrail core types: strict/balanced/yolo modes, RUN/ASK/REFUSE verdicts, category x severity table; `mode` in fender.toml (D21, D23)
 - Guardrail parsing substrate: mvdan.cc/sh/v3 AST helpers (word literals, call names, arg extraction) — no regex (D23)
 - Guardrail detectors: destructive fs (severity by target), privilege/system, irreversible git, pipe-to-shell, runaway (fork bomb, zero-fill, infinite loop), tty hangers, protected paths, path escape (D23)
