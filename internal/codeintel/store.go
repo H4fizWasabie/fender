@@ -101,7 +101,7 @@ func (s *Store) Refresh() (int, error) {
 	}
 	// prune stamps/extractions for deleted files
 	for path := range s.stamps {
-		if _, err := os.Stat(filepath.Join(s.projectDir, path)); err != nil {
+		if _, err := os.Stat(path); err != nil {
 			delete(s.stamps, path)
 			delete(s.extractions, path)
 		}

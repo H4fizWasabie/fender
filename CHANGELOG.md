@@ -127,3 +127,12 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Store: Open/Refresh (mtime+size stamps, dirty-only re-extract, skip dirs), extractions cache, graph.json persist
+
+### Added
+- Graph: Build() — node union, self-edge skip (post-resolution), call resolution to same-project symbols (EXTRACTED), name-only stays INFERRED
+- Store: Open/Refresh (mtime+size stamps, dirty-only re-extract, skip dirs), extractions cache, graph.json persist
+
+### Fixed
+- codeintel store prune: paths were already absolute — Join doubled them, prune deleted every stamp (execution-caught)
+- codeintel graph: self-edge check moved after call resolution (A→A label resolves to self)
+- codeintel store test: extraction key is the absolute path, not relative

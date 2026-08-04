@@ -53,7 +53,7 @@ func TestRefreshIncremental(t *testing.T) {
 	if changed != 1 {
 		t.Fatalf("after touch changed = %d, want 1", changed)
 	}
-	ex := s.Extractions()["main.go"]
+	ex := s.Extractions()[filepath.Join(root, "main.go")]
 	if len(ex.Nodes) == 0 {
 		t.Fatal("main.go not re-extracted")
 	}
