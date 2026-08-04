@@ -61,3 +61,19 @@ func TestStreamCollectsToolCalls(t *testing.T) {
 		t.Fatalf("arguments = %q", tc[0].Function.Arguments)
 	}
 }
+
+func TestStreamSetsRole(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n"))
+	}))
+	defer srv.Close()
+	c := New("mock", Provider{BaseURL: srv.URL, APIKey: "k", Models: []string{"m"}, DefaultModel: "m"})
+	resp, err := c.Stream(context.Background(), Request{Model: "m", Messages: []Message{{Role: "user", Content: "x"}}}, func(string) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Choices[0].Message.Role != "assistant" {
+		t.Fatalf("role = %q", resp.Choices[0].Message.Role)
+	}
+}

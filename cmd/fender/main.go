@@ -59,6 +59,8 @@ func runCLI(out io.Writer, args []string) error {
 		return intelCommand(out, fs.Args()[1:])
 	case "repl":
 		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *fresh)
+	case "dashboard":
+		return dashboard(out, *configPath)
 	case "sessions":
 		files, err := listSessions()
 		if err != nil {

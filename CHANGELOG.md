@@ -224,3 +224,12 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Anthropic adapter (D42/ticket 11): api = "anthropic" provider — Messages API translation, SSE streaming, tool_use/tool_result blocks, thinking_delta mapping
+
+### Added
+- Ticket 12: dashboard GUI (D2 pragmatic) — embedded static UI, SSE observer broadcast, HTTP message API
+
+### Added
+- Dashboard GUI (ticket 12): embedded single-file web UI, SSE observer broadcast, HTTP message API, shared sessions
+
+### Fixed
+- Streamed responses now set Role:"assistant" — empty-role message poisoned the second request (400 from strict gateways); regression test added

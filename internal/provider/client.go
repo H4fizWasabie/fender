@@ -225,6 +225,9 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), 
 			if len(out.Choices) == 0 {
 				out.Choices = append(out.Choices, Choice{})
 			}
+			if out.Choices[0].Message.Role == "" {
+				out.Choices[0].Message.Role = "assistant" // streamed messages need a role (bug fix)
+			}
 			msg := &out.Choices[0].Message
 			if ch.Delta.Content != "" {
 				msg.Content += ch.Delta.Content
