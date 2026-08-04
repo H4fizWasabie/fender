@@ -178,3 +178,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - main_test: removed obsolete TestNoArgsShowsUsage (no-args now launches the REPL, covered by TestReplQuit)
+
+### Changed
+- Wayfinder: ticket 08 resolved — **Fender v1 complete** (all 8 subsystems delivered); map: destination reached, post-v1 backlog recorded
