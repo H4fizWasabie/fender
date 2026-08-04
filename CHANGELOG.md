@@ -111,3 +111,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 07 spec: codeintel design (D16/D19/D20/D34-3) — tree-sitter extraction (Go/Python/TS), JSON incremental store, graph build, query API, MAP.md generation
+
+### Added
+- Plan 7 (codeintel): `docs/superpowers/plans/2026-08-04-fender-codeintel.md` — deps pin, extractor, store, graph, query API, MAP generation, intel CLI (7 tasks)
