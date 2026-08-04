@@ -72,6 +72,7 @@ func New(projectDir string, shell ShellConfig, searcher Searcher) *Registry {
 	r.Add(readTool(projectDir))
 	r.Add(editTool(projectDir))
 	r.Add(shellTool(shell))
+	r.Add(searchTool(projectDir, searcher))
 	return r
 }
 

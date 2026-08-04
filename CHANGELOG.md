@@ -32,3 +32,4 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Tools core: Tool/Registry (JSON-arg dispatch, OpenAI schemas, subagent subsets via Without) + project path containment (D10)
 - read_file tool (1-based offset/limit line slices, project containment) + edit_file tool (unique exact-match replace, mode-preserving) (D10)
 - shell tool: Judge verdict wiring (REFUSE hard in all modes, ASK via injectable approver, RUN), audit every command, default 60s timeout, 64 KiB output cap (D11, D12, D24)
+- search tool: walk-based default backend (skips .git/vendor/binary, 50-match cap) behind the Searcher seam (D10)
