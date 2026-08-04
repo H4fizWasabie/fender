@@ -89,8 +89,10 @@ func New(name string, p Provider) *Client {
 	}
 }
 
-func (c *Client) Name() string  { return c.name }
-func (c *Client) Model() string { return c.model }
+func (c *Client) Name() string     { return c.name }
+func (c *Client) Model() string    { return c.model }
+func (c *Client) BaseURL() string  { return c.base }
+func (c *Client) Models() []string { return c.models }
 
 func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 	body, err := json.Marshal(req)

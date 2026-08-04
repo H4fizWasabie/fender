@@ -19,4 +19,5 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - OpenAI-compatible client: Chat() with tool_calls parsing, Bearer auth, non-200 error wrapping
 - Streaming client: Stream() with SSE parsing, content deltas via callback, tool-call accumulation
 - Provider registry: fender.toml loading (./ then ~/.fender/), client lookup, default provider
+- `fender providers` CLI: lists configured providers, models, defaults; `--config` flag
 - Wayfinder map: `.scratch/fender/` — 8 build-phase tickets, 01 Foundation claimed, 02–08 blocked in AGENTS.md build order
