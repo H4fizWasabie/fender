@@ -50,7 +50,7 @@ func runCLI(out io.Writer, args []string) error {
 		if fs.NArg() < 2 {
 			return fmt.Errorf("usage: fender run <task>")
 		}
-		return runTask(out, strings.Join(fs.Args()[1:], " "))
+		return runTask(out, *configPath, strings.Join(fs.Args()[1:], " "))
 	case "init":
 		return initProject(out)
 	case "skill":
@@ -175,8 +175,8 @@ func listProviders(out io.Writer, configPath string) error {
 }
 
 // runTask runs one autonomous task (D4): quiet, final reply only.
-func runTask(out io.Writer, task string) error {
-	a, err := buildAgent("", nil, nil)
+func runTask(out io.Writer, cfgPath, task string) error {
+	a, err := buildAgent(cfgPath, nil, nil)
 	if err != nil {
 		return err
 	}

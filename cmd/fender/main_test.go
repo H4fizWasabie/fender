@@ -41,10 +41,13 @@ func TestProvidersCommand(t *testing.T) {
 }
 
 func TestRunCommand(t *testing.T) {
+	// hermetic: explicit config with no usable provider must error fast instead
+	// of picking up ~/.fender/fender.toml and calling the real API (D41-era hang).
+	path := writeConfig(t, "mode = \"balanced\"\n")
 	var out bytes.Buffer
-	err := runCLI(&out, []string{"run", "do something"})
+	err := runCLI(&out, []string{"--config", path, "run", "do something"})
 	if err == nil {
-		t.Fatal("expected error without config")
+		t.Fatal("expected error without a usable provider")
 	}
 }
 
