@@ -54,6 +54,7 @@ func (a *Agent) delegateTool() tools.Tool {
 				MaxSubIter: a.MaxSubIter,
 				registry:   a.registry.Without("delegate"),
 				Mem:        a.Mem, // D39: delegates share project memory (artifact context still isolated below)
+				Skills:     a.Skills, // D27: delegates share the skill registry
 			}
 			if a.Ctx != nil {
 				child.Ctx = a.Ctx.Child() // D38: isolated artifacts + catalog

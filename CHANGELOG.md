@@ -96,3 +96,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Trigger matching: Match() — significant-word overlap >=2, top 3, 8K body budget, user-invoked skills excluded
+
+### Added
+- Agent wiring: nil-safe Skills — ponytail core + descriptions + matched bodies in system; load_skill tool; delegates share
+
+### Changed
+- Skills catalog: model-invokable skills only (user-invoked are slash-command-only), cap 4000 -> 6000 (full 14-skill catalog is 4508 chars)

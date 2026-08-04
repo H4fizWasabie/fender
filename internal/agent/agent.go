@@ -10,6 +10,7 @@ import (
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
+	"github.com/H4fizWasabie/fender/internal/skills"
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
 
@@ -34,8 +35,9 @@ type Agent struct {
 	System     string
 	MaxIter    int             // 0 -> defaultMaxIter
 	MaxSubIter int             // 0 -> defaultMaxSubIter
-	Ctx        *ctxpkg.Manager // D31 artifact layer; nil = ticket-03 behavior
-	Mem        *memory.Memory // D39 ICM memory workspace; nil = ticket-04 behavior
+	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
+	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
 	registry   *tools.Registry
 }
 
@@ -43,6 +45,7 @@ type Agent struct {
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
 	a := &Agent{LLM: llm, registry: reg}
 	a.registry.Add(a.delegateTool())
+	a.registry.Add(a.loadSkillTool())
 	return a
 }
 
@@ -68,6 +71,15 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	if a.Mem != nil {
 		if b, err := a.Mem.Bootstrap(); err == nil {
 			a.System = b.System() + a.System // constitution first, then task-specific
+		}
+	}
+	if a.Skills != nil {
+		if core, ok := a.Skills.PonytailCore(); ok {
+			a.System = core.Body + "\n\n" + a.System // D30: always-loaded discipline
+		}
+		a.System = a.Skills.Descriptions() + "\n" + a.System
+		for _, s := range a.Skills.Match(lastUserContent(msgs)) {
+			a.System += "\n[skill loaded: " + s.Name + "]\n" + s.Body
 		}
 	}
 	if a.Ctx != nil {
@@ -181,6 +193,42 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	}
 
 	return &Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter}
+}
+
+// lastUserContent returns the most recent user-role message content.
+func lastUserContent(msgs []provider.Message) string {
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == "user" {
+			return msgs[i].Content
+		}
+	}
+	return ""
+}
+
+// loadSkillTool lets the model fetch a skill body on demand (D27).
+func (a *Agent) loadSkillTool() tools.Tool {
+	return tools.Tool{
+		Name:        "load_skill",
+		Description: "Load a skill body by name. Skills are listed in the system prompt catalog.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"name": map[string]any{"type": "string"},
+			},
+			"required": []string{"name"},
+		},
+		Call: func(ctx context.Context, args map[string]any) (string, error) {
+			name, _ := args["name"].(string)
+			if a.Skills == nil {
+				return "", fmt.Errorf("error: no skills registry")
+			}
+			s, ok := a.Skills.ByName(name)
+			if !ok {
+				return "", fmt.Errorf("error: unknown skill %s", name)
+			}
+			return s.Body, nil
+		},
+	}
 }
 
 func orientationMessage() provider.Message {

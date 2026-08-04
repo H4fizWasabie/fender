@@ -11,7 +11,7 @@ import (
 const (
 	MatchTopN          = 3
 	BodyBudget         = 8000
-	DescriptionListCap = 4000
+	DescriptionListCap = 6000
 )
 
 type Skill struct {
@@ -84,11 +84,15 @@ func (r *Registry) ByName(name string) (Skill, bool) {
 	return s, ok
 }
 
-// Descriptions is the always-loaded catalog: one line per skill, capped.
+// Descriptions is the always-loaded catalog: one line per model-invokable
+// skill (user-invoked skills are slash-command-only — the model never sees
+// them), capped against pathological installed skills.
 func (r *Registry) Descriptions() string {
 	names := make([]string, 0, len(r.all))
-	for n := range r.all {
-		names = append(names, n)
+	for n, s := range r.all {
+		if s.ModelInvokable {
+			names = append(names, n)
+		}
 	}
 	sort.Strings(names)
 	var sb strings.Builder
