@@ -66,3 +66,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Bootstrap(): Ensure + Detect + layer reads; System() assembly with provenance markers, 8K cap (oldest-first truncation), unreadable files skipped
+
+### Added
+- Working memory: pruneWorking (7-day, patterns.md exempt) in Bootstrap; Working() catalog

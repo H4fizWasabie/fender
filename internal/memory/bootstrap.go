@@ -55,6 +55,28 @@ func (m *Memory) pruneWorking() {
 	}
 }
 
+// Working lists surviving working files: "<basename>: <path> (<age>)".
+func (m *Memory) Working() []string {
+	dir := filepath.Join(m.root, ".fender", "memory", "working")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		age := time.Since(info.ModTime()).Round(time.Hour)
+		out = append(out, fmt.Sprintf("%s: %s (%s)", e.Name(), filepath.Join(dir, e.Name()), age))
+	}
+	return out
+}
+
 // System composes the always-loaded layer: convention files (in precedence
 // order) + PROJECT.md, provenance-marked. Capped at SystemCap — excess is
 // truncated oldest-first with a marker (prevention over compression, D14).
