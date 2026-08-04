@@ -78,3 +78,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 06 spec: skills design (D27-D30 implementation) — go:embed 23 skills, regex frontmatter parser, word-overlap matching, shadowing, load_skill tool, skill install
+
+### Added
+- Plan 6 (skills): `docs/superpowers/plans/2026-08-04-fender-skills.md` — vendor, parser, registry, matching, agent wiring, skill install (7 tasks)
