@@ -99,9 +99,19 @@ Built in Go from day one. Reference sources cloned to `~/Desktop/fender-referenc
 - **Query API:** symbol lookup, call paths, "where is this used" — codegraph's query ergonomics + cce's retrieval design.
 - **MAP.md generation** — code-intel feeds the memory layer (D17: MAP.md is the front door, code-intel is the card catalog).
 
-### 3.8 Context (D15)
+### 3.8 Context (D31 — resolved from D15)
 
-Conversation/tool-loop context engineering uses a methodology decided later — separated from the ICM memory layer. Thin interface in v1.
+Conversation/tool-loop context methodology = **mino's artifact engineering**, five techniques:
+
+1. **Compress** — tool output > 8K chars → one-line artifact pointer, never inline
+2. **Preserve head + tail** — large user input → HEAD/TAIL split inline, middle dropped
+3. **Select** — model fetches slices via `read_file(offset,limit)` — the one tool never compacted; artifact catalog rides in context
+4. **Write elsewhere** — full content at isolated path (0600), fetched on demand
+5. **Isolate** — per-session/turn/tool dirs, stale pruning, maxAge sweep
+
+Plus: turns-truncation with compaction markers, `ContextFor` budget arithmetic, completion reminders. `context_test.go` from mino = test blueprint.
+
+**Token-caching stack (5 layers):** provider prompt caching · tool dedup within turn · input preview/artifact pointer · turns truncation + markers · background consolidation via small model.
 
 ### 3.9 UI (D26)
 
@@ -126,7 +136,6 @@ Plain streaming transcript: minimal ANSI color, visible tool-call lines, readabl
 
 | Item | Decision | Seam |
 |------|----------|------|
-| Conversation-loop context methodology | D15 | `internal/context` thin interface |
 | Session persistence | D9 | `memory/sessions/` |
 | Anthropic adapter | D6 | provider interface |
 | Desktop GUI | D2 | `internal/ui` thin skin |
