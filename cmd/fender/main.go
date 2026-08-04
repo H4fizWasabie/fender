@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -37,21 +39,25 @@ func runCLI(out io.Writer, args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		fmt.Fprintln(out, "usage: fender [--config PATH] <command>")
-		fmt.Fprintln(out, "  providers          list configured providers")
-		fmt.Fprintln(out, "  skill install SRC  install skills from a local path or git URL")
-		fmt.Fprintln(out, "  intel refresh      incremental code index")
-		fmt.Fprintln(out, "  intel search Q     symbol search")
-		fmt.Fprintln(out, "  intel map          generate MAP.md into .fender/memory/")
-		return nil
+		// interactive REPL (D26)
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath)
 	}
 	switch fs.Arg(0) {
 	case "providers":
 		return listProviders(out, *configPath)
+	case "run":
+		if fs.NArg() < 2 {
+			return fmt.Errorf("usage: fender run <task>")
+		}
+		return runTask(out, strings.Join(fs.Args()[1:], " "))
+	case "init":
+		return initProject(out)
 	case "skill":
 		return skillCommand(out, fs.Args()[1:])
 	case "intel":
 		return intelCommand(out, fs.Args()[1:])
+	case "repl":
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath)
 	default:
 		return fmt.Errorf("unknown command %q", fs.Arg(0))
 	}
@@ -153,5 +159,44 @@ func listProviders(out io.Writer, configPath string) error {
 		c, _ := r.Client(name)
 		fmt.Fprintf(out, "%-15s %-40s models=%s default=%s\n", name, c.BaseURL(), strings.Join(c.Models(), ", "), c.Model())
 	}
+	return nil
+}
+
+// runTask runs one autonomous task (D4): quiet, final reply only.
+func runTask(out io.Writer, task string) error {
+	a, err := buildAgent("", nil, nil)
+	if err != nil {
+		return err
+	}
+	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: task}})
+	fmt.Fprintln(out, res.Reply)
+	if res.Status != "complete" {
+		return fmt.Errorf("status: %s", res.Status)
+	}
+	return nil
+}
+
+// initProject scaffolds the workspace + config (D25), idempotent.
+func initProject(out io.Writer) error {
+	mem := memory.New(".")
+	if err := mem.Ensure(); err != nil {
+		return err
+	}
+	if _, err := os.Stat("fender.toml"); os.IsNotExist(err) {
+		template := `# Fender configuration (D25)
+mode = "balanced" # strict | balanced | yolo (D21)
+
+[providers.openrouter]
+base_url = "https://openrouter.ai/api/v1"
+api_key = "sk-or-v1-..."
+models = ["openai/gpt-4o-mini"]
+default_model = "openai/gpt-4o-mini"
+`
+		if err := os.WriteFile("fender.toml", []byte(template), 0600); err != nil {
+			return err
+		}
+		fmt.Fprintln(out, "wrote fender.toml (edit api_key)")
+	}
+	fmt.Fprintln(out, "workspace ready (.fender/)")
 	return nil
 }

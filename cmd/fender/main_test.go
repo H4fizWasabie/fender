@@ -49,3 +49,33 @@ func TestNoArgsShowsUsage(t *testing.T) {
 		t.Fatalf("output = %q", out.String())
 	}
 }
+
+func TestRunCommand(t *testing.T) {
+	var out bytes.Buffer
+	err := runCLI(&out, []string{"run", "do something"})
+	if err == nil {
+		t.Fatal("expected error without config")
+	}
+}
+
+func TestInitCommand(t *testing.T) {
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := runCLI(&out, []string{"init"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".fender", "memory", "PROJECT.md")); err != nil {
+		t.Fatal("memory workspace not created")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "fender.toml")); err != nil {
+		t.Fatal("fender.toml not scaffolded")
+	}
+	if err := runCLI(&out, []string{"init"}); err != nil {
+		t.Fatal(err)
+	}
+}

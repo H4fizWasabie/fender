@@ -170,3 +170,8 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - REPL: fender interactive mode — observer rendering (streaming deltas, tool lines), /quit /model /mode /skills /help, in-memory history
+
+### Added
+- `fender run <task>`: autonomous one-shot (reply + exit code by status)
+- `fender init`: memory workspace + fender.toml scaffold, idempotent
+- `fender` (no args): interactive REPL
