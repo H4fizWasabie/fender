@@ -121,3 +121,36 @@ func TestCleanupRemovesStale(t *testing.T) {
 		t.Fatal("fresh run swept")
 	}
 }
+
+func TestCompactInputSmallInline(t *testing.T) {
+	m := newTestManager(t)
+	got, art := m.CompactInput("short task", PreviewLimit)
+	if got != "short task" || art.Path != "" {
+		t.Fatalf("got %q art %+v", got, art)
+	}
+}
+
+func TestCompactInputHeadTail(t *testing.T) {
+	m := newTestManager(t)
+	head, tail := PreviewLimit/2, PreviewLimit-PreviewLimit/2
+	// Distinct middle so we can assert it never leaks inline.
+	input := strings.Repeat("A", head) + strings.Repeat("B", PreviewLimit+1) + strings.Repeat("C", tail)
+	got, art := m.CompactInput(input, PreviewLimit)
+	if !strings.Contains(got, "large user input") ||
+		!strings.Contains(got, "\nHEAD:\n") || !strings.Contains(got, "\nTAIL:\n") {
+		t.Fatalf("pointer/HEAD/TAIL missing: %.100q", got)
+	}
+	if strings.Contains(got, "B") {
+		t.Fatal("middle leaked inline")
+	}
+	if art.Path == "" || art.Size != len(input) {
+		t.Fatalf("artifact = %+v", art)
+	}
+	data, err := os.ReadFile(art.Path)
+	if err != nil || string(data) != input {
+		t.Fatalf("artifact content: %v", err)
+	}
+	if cat := m.Catalog(); !strings.Contains(cat, art.Path) {
+		t.Fatalf("catalog missing input artifact: %q", cat)
+	}
+}

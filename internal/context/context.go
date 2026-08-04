@@ -100,6 +100,31 @@ func (m *Manager) CompactOutput(tool, output string) string {
 	return fmt.Sprintf("[artifact: %s → %d chars at %s; use read_file with offset and limit]", tool, len(output), path)
 }
 
+// CompactInput preserves the head + tail of a large user message inline and
+// writes the full content elsewhere (D31: preserve head+tail, write
+// elsewhere). Returns the compacted text and the recorded artifact (zero
+// Artifact when the input stays inline). preview is the HEAD/TAIL budget —
+// For() derives it from the available context budget (mino ContextFor).
+func (m *Manager) CompactInput(input string, preview int) (string, Artifact) {
+	if len(input) <= preview || preview <= 0 {
+		return input, Artifact{}
+	}
+	dir := filepath.Join(m.Root, fmt.Sprintf("input-%d", time.Now().UnixNano()))
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return input[:preview], Artifact{}
+	}
+	path := filepath.Join(dir, "user.txt")
+	if err := os.WriteFile(path, []byte(input), 0o600); err != nil {
+		return input[:preview], Artifact{}
+	}
+	head := preview / 2
+	tail := preview - head
+	art := Artifact{Label: "user input", Path: path, Size: len(input)}
+	m.record(art)
+	return fmt.Sprintf("[large user input: %d chars at %s; use read_file with offset and limit]\nHEAD:\n%s\n...\nTAIL:\n%s",
+		len(input), path, input[:head], input[len(input)-tail:]), art
+}
+
 // safeName keeps a label filesystem-safe (mino safePath).
 func safeName(s string) string {
 	return strings.Map(func(r rune) rune {
