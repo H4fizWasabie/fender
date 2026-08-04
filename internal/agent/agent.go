@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
@@ -30,8 +31,9 @@ type Agent struct {
 	LLM        LLM
 	Resolver   Resolver // subagent provider selection (D7); nil -> inherit parent LLM
 	System     string
-	MaxIter    int // 0 -> defaultMaxIter
-	MaxSubIter int // 0 -> defaultMaxSubIter
+	MaxIter    int             // 0 -> defaultMaxIter
+	MaxSubIter int             // 0 -> defaultMaxSubIter
+	Ctx        *ctxpkg.Manager // D31 artifact layer; nil = ticket-03 behavior
 	registry   *tools.Registry
 }
 
@@ -61,6 +63,10 @@ type Result struct {
 // ctx cancellation. Flat by default; on thrash (tool errors, repeated same
 // call, no progress) it injects ONE orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
+	if a.Ctx != nil {
+		a.Ctx.Cleanup(ctxpkg.SweepAge)
+		msgs = a.Ctx.For(a.System, msgs)
+	}
 	if a.System != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
 		msgs = append([]provider.Message{{Role: "system", Content: a.System}}, msgs...)
 	}
@@ -134,6 +140,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 				errors++
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				continue
+			}
+			if a.Ctx != nil {
+				out = a.Ctx.CompactOutput(tc.Function.Name, out)
 			}
 			dedup[key] = out
 			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})

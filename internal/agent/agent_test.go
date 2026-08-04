@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/tools"
@@ -274,7 +275,6 @@ func TestRunStallsAfterOrientationOnErrors(t *testing.T) {
 	}
 }
 
-
 func TestRunMaxIter(t *testing.T) {
 	f := &fakeLLM{steps: []*provider.Response{textReply("x"), textReply("x")}}
 	a, _ := newTestAgent(t, f)
@@ -296,5 +296,92 @@ func TestRunSystemPrompt(t *testing.T) {
 	m := f.last().Messages[0]
 	if m.Role != "system" || m.Content != "be good" {
 		t.Fatalf("first message = %+v", m)
+	}
+}
+
+func TestRunCompactsLargeToolOutput(t *testing.T) {
+	proj := t.TempDir()
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		completeReply("complete", "done"),
+	}}
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
+	a := NewAgent(f, reg)
+	a.Ctx = ctxpkg.New()
+	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
+	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "run it"}})
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	got := lastToolResult(t, f)
+	if !strings.Contains(got, "[artifact:") {
+		t.Fatalf("tool result not compacted: %.100q", got)
+	}
+	if strings.Contains(got, strings.Repeat("y", 9000)) {
+		t.Fatal("raw 9K output leaked inline")
+	}
+}
+
+func TestRunReadFileStaysInline(t *testing.T) {
+	proj := t.TempDir()
+	big := strings.Repeat("r", 10000)
+	if err := os.WriteFile(filepath.Join(proj, "big.txt"), []byte(big), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "read_file", `{"path":"big.txt"}`),
+		completeReply("complete", "ok"),
+	}}
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
+	a := NewAgent(f, reg)
+	a.Ctx = ctxpkg.New()
+	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
+	res := a.Run(context.Background(), nil)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	if got := lastToolResult(t, f); got != big {
+		t.Fatalf("read_file result altered: %d chars", len(got))
+	}
+}
+
+func TestRunDedupReplaysPointer(t *testing.T) {
+	proj := t.TempDir()
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_2", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		completeReply("complete", "ok"),
+	}}
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
+	a := NewAgent(f, reg)
+	a.Ctx = ctxpkg.New()
+	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
+	res := a.Run(context.Background(), nil)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	found := false
+	for _, m := range f.last().Messages {
+		if m.Role == "tool" && strings.HasPrefix(m.Content, "[already executed] [artifact:") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("dedup replay lost the artifact pointer")
+	}
+}
+
+func TestRunCompactsLargeUserInput(t *testing.T) {
+	f := &fakeLLM{steps: []*provider.Response{completeReply("complete", "ok")}}
+	a, _ := newTestAgent(t, f)
+	a.Ctx = ctxpkg.New()
+	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
+	big := strings.Repeat("t", 30000)
+	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: big}})
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	if msg := f.last().Messages[0]; !strings.Contains(msg.Content, "large user input") {
+		t.Fatalf("task not compacted: %.100q", msg.Content)
 	}
 }

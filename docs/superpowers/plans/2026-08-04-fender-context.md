@@ -750,7 +750,7 @@ git commit -m "feat: context For() — budget arithmetic, turns truncation, arti
 func TestRunCompactsLargeToolOutput(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_1", "shell", `{"cmd":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
 		completeReply("complete", "done"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
@@ -796,8 +796,8 @@ func TestRunReadFileStaysInline(t *testing.T) {
 func TestRunDedupReplaysPointer(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_1", "shell", `{"cmd":"printf 'y%.0s' {1..9000}"}`),
-		toolReply("call_2", "shell", `{"cmd":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_2", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
 		completeReply("complete", "ok"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
@@ -937,7 +937,7 @@ git commit -m "feat: agent loop wired to context layer (D31)"
 ```go
 func TestDelegateChildGetsOwnContext(t *testing.T) {
 	child := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_c1", "shell", `{"cmd":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_c1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
 		completeReply("complete", "child done"),
 	}}
 	parent := &fakeLLM{steps: []*provider.Response{
