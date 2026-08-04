@@ -70,15 +70,21 @@ type Client struct {
 	base   string
 	apiKey string
 	model  string
+	models []string
 	http   *http.Client
 }
 
 func New(name string, p Provider) *Client {
+	model := p.DefaultModel
+	if model == "" && len(p.Models) > 0 {
+		model = p.Models[0] // fall back to first model when no default_model set
+	}
 	return &Client{
 		name:   name,
 		base:   strings.TrimSuffix(p.BaseURL, "/"),
 		apiKey: p.APIKey,
-		model:  p.DefaultModel,
+		model:  model,
+		models: p.Models,
 		http:   &http.Client{Timeout: 5 * time.Minute},
 	}
 }
