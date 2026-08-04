@@ -56,6 +56,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D42 | **Anthropic adapter (ticket 11) — D6 delivered.** Provider config gains `api = "anthropic"`; a new `internal/provider/anthropic.go` implements the same `agent.LLM` interface (Chat + StreamChat via SSE) translating OpenAI-shaped `Request/Response` ↔ Anthropic Messages API (`/v1/messages`, `x-api-key` + `anthropic-version` headers, `content: [{type:text|tool_use|tool_result}]`, `stop_reason` mapping). v1: text + tool calls; no thinking blocks (reasoning stays OpenAI-side); system messages mapped to the `system` top-level field. |
 
+| D43 | **Consolidation (ticket 13) — D32 layer 6 delivered, unblocked by D9.** On session end (quit/EOF), if ≥4 exchanges and unconsolidated, the small model distills the log → durable facts (one .md file each in `.fender/memory/facts/`, reserved by D39) + one episode (appended to `.fender/memory/sessions/episodes.md`). JSON-only reply prompt (mino's), placeholder-filtered parse, session marked consolidated. Runs in a background goroutine; failures are silent (re-consolidated next session end). |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

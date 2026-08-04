@@ -233,3 +233,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Streamed responses now set Role:"assistant" — empty-role message poisoned the second request (400 from strict gateways); regression test added
+
+### Added
+- Ticket 13: consolidation spec (D43) — session-end distillation to facts/ + episodes
