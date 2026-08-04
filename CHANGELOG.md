@@ -1,0 +1,10 @@
+# Changelog
+
+All notable changes to Fender. Every commit MUST update this file (enforced by `.githooks/pre-commit`).
+
+## [Unreleased]
+
+### Added
+- Design session (2026-08-04): full Fender design locked in `DECISIONS.md` (D1–D37) and `docs/superpowers/specs/2026-08-04-fender-design.md`
+- `AGENTS.md` — project constitution; every agent session must follow the decision log
+- `.githooks/pre-commit` — enforces the changelog rule; install with `git config core.hooksPath .githooks`

@@ -56,6 +56,14 @@ fender/
 ## Version control
 
 - **Commit at every working milestone.** Subject says what, body says WHY.
+- **CHANGELOG.md is mandatory on EVERY commit.** No changelog = no commit — enforced by `.githooks/pre-commit` (install: `git config core.hooksPath .githooks`; required after every clone). Format:
+  ```
+  ## [Unreleased]
+  ### Added
+  - Feature X (reason)
+  ### Changed
+  - Refactored Y (why)
+  ```
 - **Design changes update `DECISIONS.md` + spec in the SAME commit as the code.** No code drift from the decision log — that's the whole point of this file.
 - **Branch naming:** `feat/short-description`, `fix/short-description`, `refactor/short-description`.
 

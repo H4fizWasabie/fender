@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Fender pre-commit hook: every commit MUST update CHANGELOG.md (AGENTS.md rule).
+# Install: git config core.hooksPath .githooks
+set -euo pipefail
+
+if git diff --cached --name-only | grep -q '^CHANGELOG\.md$'; then
+  exit 0
+fi
+
+if git diff --cached --name-only | grep -q .; then
+  echo "✗ CHANGELOG.md not staged. Every commit must update the changelog (AGENTS.md)."
+  echo "  1. git add CHANGELOG.md   (after appending your [Unreleased] entry)"
+  exit 1
+fi
+
+exit 0
