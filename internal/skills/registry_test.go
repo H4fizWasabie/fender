@@ -65,8 +65,8 @@ func TestMergeShadowing(t *testing.T) {
 	if got, _ := merged.ByName("y"); got.Source != "user" {
 		t.Fatalf("y = %+v", got)
 	}
-	if got, _ := merged.ByName("z"); got.Source != "bundled" {
-		t.Fatalf("z = %+v", got)
+	if _, ok := merged.ByName("z"); ok {
+		t.Fatal("z must not exist in merged registry")
 	}
 }
 

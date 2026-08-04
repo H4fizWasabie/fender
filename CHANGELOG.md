@@ -90,3 +90,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Skills registry: Load (missing dir = empty, broken skipped), Merge (project > user > bundled), ByName, Descriptions (4K cap), PonytailCore
+
+### Fixed
+- skills registry test: z lookup asserts ok=false (was wrongly expecting bundled source)
