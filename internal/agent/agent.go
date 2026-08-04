@@ -20,21 +20,34 @@ type LLM interface {
 
 const (
 	defaultMaxIter    = 30
+	defaultMaxSubIter = 6
 	orientationPrompt = `(orientation turn — harness-enforced) Stop and orient before acting again. Reply with exactly four points: 1) what you know, 2) what is uncertain, 3) your hypothesis for the failures so far, 4) the single next distinct action. Do not repeat a failed or already-executed call.`
 )
 
 // Agent is one loop: model + tools + discipline. The same type runs the
 // parent and every subagent (D13).
 type Agent struct {
-	LLM      LLM
-	System   string
-	MaxIter  int // 0 -> defaultMaxIter
-	registry *tools.Registry
+	LLM        LLM
+	Resolver   Resolver // subagent provider selection (D7); nil -> inherit parent LLM
+	System     string
+	MaxIter    int // 0 -> defaultMaxIter
+	MaxSubIter int // 0 -> defaultMaxSubIter
+	registry   *tools.Registry
 }
 
-// NewAgent wires llm to reg. Task 7 registers the delegate tool here.
+// NewAgent wires llm to reg and registers the delegate tool (D13).
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
-	return &Agent{LLM: llm, registry: reg}
+	a := &Agent{LLM: llm, registry: reg}
+	a.registry.Add(a.delegateTool())
+	return a
+}
+
+// subIter is the effective subagent iteration cap.
+func (a *Agent) subIter() int {
+	if a.MaxSubIter > 0 {
+		return a.MaxSubIter
+	}
+	return defaultMaxSubIter
 }
 
 // Result is what Run returns.
