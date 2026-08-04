@@ -987,7 +987,7 @@ Expected: FAIL — the child's tool result stays inline (no pointer found → `c
 
 - [ ] **Step 3: Write the implementation** — `internal/agent/delegate.go`:
 
-Import (alias): `ctxpkg "github.com/H4fizWasabie/fender/internal/context"`.
+
 
 In the delegate tool's Call, after the child Agent literal:
 

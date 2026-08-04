@@ -54,6 +54,9 @@ func (a *Agent) delegateTool() tools.Tool {
 				MaxSubIter: a.MaxSubIter,
 				registry:   a.registry.Without("delegate"),
 			}
+			if a.Ctx != nil {
+				child.Ctx = a.Ctx.Child() // D38: isolated artifacts + catalog
+			}
 			ch := make(chan *Result, 1)
 			go func() {
 				ch <- child.Run(ctx, []provider.Message{{Role: "user", Content: prompt}})

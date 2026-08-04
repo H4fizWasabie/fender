@@ -2,9 +2,11 @@ package agent
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/provider"
 )
 
@@ -107,5 +109,47 @@ func TestDelegateUnknownProvider(t *testing.T) {
 	}
 	if got := lastToolResult(t, f); !strings.Contains(got, "no resolver") {
 		t.Fatalf("tool result = %q", got)
+	}
+}
+
+func TestDelegateChildGetsOwnContext(t *testing.T) {
+	child := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_c1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		completeReply("complete", "child done"),
+	}}
+	parent := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "delegate", `{"prompt":"do the big thing","provider":"child"}`),
+		completeReply("complete", "parent done"),
+	}}
+	a, _ := newTestAgent(t, parent)
+	a.Resolver = func(name string) (LLM, error) { return child, nil }
+	a.Ctx = ctxpkg.New()
+	a.Ctx.Root = filepath.Join(t.TempDir(), "parent-run")
+	res := a.Run(context.Background(), nil)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	// The child loop compacted its big output into ITS run dir.
+	pointer := ""
+	for _, req := range child.all() {
+		for _, m := range req.Messages {
+			if strings.Contains(m.Content, "[artifact:") {
+				pointer = m.Content
+			}
+		}
+	}
+	if pointer == "" {
+		t.Fatal("child never compacted")
+	}
+	_, after, _ := strings.Cut(pointer, " at ")
+	path, _, _ := strings.Cut(after, ";")
+	if !strings.HasPrefix(path, filepath.Dir(a.Ctx.Root)+"/") {
+		t.Fatalf("child artifact outside child root: %q", path)
+	}
+	if strings.HasPrefix(path, a.Ctx.Root+"/") {
+		t.Fatal("child artifact leaked into parent root")
+	}
+	if strings.Contains(a.Ctx.Catalog(), path) {
+		t.Fatal("child artifact recorded in parent catalog")
 	}
 }
