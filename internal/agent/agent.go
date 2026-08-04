@@ -21,6 +21,18 @@ type LLM interface {
 	Chat(ctx context.Context, req provider.Request) (*provider.Response, error)
 }
 
+// Event is one observable loop event (the renderer seam, ticket-08 spec §3.1).
+type Event struct {
+	Kind   string // "delta" | "tool" | "done"
+	Text   string // delta text / tool description
+	Status string // tool status ("ok"|"error"|"cached") or result status
+}
+
+// Streamer is the optional streaming capability of an LLM (spec §3.2).
+type Streamer interface {
+	StreamChat(ctx context.Context, req provider.Request, onDelta func(string)) (*provider.Response, error)
+}
+
 const (
 	defaultMaxIter    = 30
 	defaultMaxSubIter = 6
@@ -36,6 +48,7 @@ type Agent struct {
 	MaxIter    int             // 0 -> defaultMaxIter
 	MaxSubIter int             // 0 -> defaultMaxSubIter
 	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
 	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
 	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
 	registry   *tools.Registry
@@ -101,15 +114,15 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 
 	for i := 1; i <= maxIter; i++ {
 		if ctx.Err() != nil {
-			return &Result{Status: "cancelled", Reply: "cancelled", Iterations: i}
+			return a.finish(&Result{Status: "cancelled", Reply: "cancelled", Iterations: i})
 		}
-		resp, err := a.LLM.Chat(ctx, provider.Request{Messages: msgs, Tools: schemas})
+		resp, err := a.chat(ctx, provider.Request{Messages: msgs, Tools: schemas})
 		if err != nil {
-			return &Result{Status: "error", Reply: fmt.Sprintf("(error: %v)", err), Iterations: i}
+			return a.finish(&Result{Status: "error", Reply: fmt.Sprintf("(error: %v)", err), Iterations: i})
 		}
 		if len(resp.Choices) == 0 ||
 			(resp.Choices[0].Message.Content == "" && len(resp.Choices[0].Message.ToolCalls) == 0) {
-			return &Result{Status: "error", Reply: "(error: empty model response)", Iterations: i}
+			return a.finish(&Result{Status: "error", Reply: "(error: empty model response)", Iterations: i})
 		}
 		msg := resp.Choices[0].Message
 		msgs = append(msgs, msg)
@@ -118,7 +131,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		if len(msg.ToolCalls) == 1 && msg.ToolCalls[0].Function.Name == completionToolName {
 			status, reply := completionArgs(msg.ToolCalls[0].Function.Arguments)
 			if (status == "complete" || status == "blocked") && reply != "" {
-				return &Result{Status: status, Reply: reply, Iterations: i}
+				return a.finish(&Result{Status: status, Reply: reply, Iterations: i})
 			}
 			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: msg.ToolCalls[0].ID, Content: completionError})
 			continue
@@ -133,7 +146,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 				continue
 			}
 			if oriented && noProgress >= 3 {
-				return &Result{Status: "stalled", Reply: "(stopped: repeated responses without completing the task)", Iterations: i}
+				return a.finish(&Result{Status: "stalled", Reply: "(stopped: repeated responses without completing the task)", Iterations: i})
 			}
 			msgs = append(msgs, provider.Message{Role: "user",
 				Content: "Your previous response contained no tool call and did not complete the task. Call the next tool, or call complete_task alone with status complete|blocked and the final reply."})
@@ -152,12 +165,18 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			if out, ok := dedup[key]; ok {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
 				executedKey = key // repeat detection: cached calls are not progress
+				if a.Observer != nil {
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached"})
+				}
 				continue
 			}
 			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
 			if err != nil {
 				errors++
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
+				if a.Observer != nil {
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error"})
+				}
 				continue
 			}
 			if a.Ctx != nil {
@@ -167,6 +186,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})
 			progress = true
 			executedKey = key
+			if a.Observer != nil {
+				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok"})
+			}
 		}
 
 		// Adaptive OODA (D36): flat by default; ONE orientation turn on
@@ -183,7 +205,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			lastKey = executedKey
 		}
 		if oriented && errors >= 2 {
-			return &Result{Status: "stalled", Reply: "(stopped: repeated tool failures after orientation)", Iterations: i}
+			return a.finish(&Result{Status: "stalled", Reply: "(stopped: repeated tool failures after orientation)", Iterations: i})
 		}
 		if (errors >= 2 || repeats >= 2) && !oriented {
 			msgs = append(msgs, orientationMessage())
@@ -192,7 +214,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		}
 	}
 
-	return &Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter}
+	return a.finish(&Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter})
 }
 
 // lastUserContent returns the most recent user-role message content.
@@ -229,6 +251,28 @@ func (a *Agent) loadSkillTool() tools.Tool {
 			return s.Body, nil
 		},
 	}
+}
+
+// chat calls the LLM, streaming deltas through the observer when possible.
+func (a *Agent) chat(ctx context.Context, req provider.Request) (*provider.Response, error) {
+	if st, ok := a.LLM.(Streamer); ok && a.Observer != nil {
+		return st.StreamChat(ctx, req, func(d string) {
+			a.Observer(Event{Kind: "delta", Text: d})
+		})
+	}
+	resp, err := a.LLM.Chat(ctx, req)
+	if err == nil && a.Observer != nil && len(resp.Choices) > 0 {
+		a.Observer(Event{Kind: "delta", Text: resp.Choices[0].Message.Content})
+	}
+	return resp, err
+}
+
+// finish emits the done event and returns the result.
+func (a *Agent) finish(res *Result) *Result {
+	if a.Observer != nil {
+		a.Observer(Event{Kind: "done", Status: res.Status})
+	}
+	return res
 }
 
 func orientationMessage() provider.Message {

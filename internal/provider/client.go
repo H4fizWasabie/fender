@@ -211,3 +211,9 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string)) 
 	}
 	return out, nil
 }
+
+// StreamChat implements agent.Streamer: streams deltas, accumulates the
+// full response (tool calls included).
+func (c *Client) StreamChat(ctx context.Context, req Request, onDelta func(string)) (*Response, error) {
+	return c.Stream(ctx, req, onDelta)
+}

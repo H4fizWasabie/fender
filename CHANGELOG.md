@@ -161,3 +161,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Plan 8 (CLI+UI): `docs/superpowers/plans/2026-08-04-fender-cliui.md` — observer/streamer, composition root, REPL, run/init (5 tasks, final)
+
+### Added
+- Agent observer events (delta/tool/done) + optional Streamer interface; provider.Client.StreamChat; nil-safe, prior tests unchanged
