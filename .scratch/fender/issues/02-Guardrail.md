@@ -1,7 +1,7 @@
 # 02-Guardrail
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 01
 
 ## Question

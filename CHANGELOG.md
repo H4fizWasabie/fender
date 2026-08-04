@@ -20,5 +20,5 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Streaming client: Stream() with SSE parsing, content deltas via callback, tool-call accumulation
 - Provider registry: fender.toml loading (./ then ~/.fender/), client lookup, default provider
 - `fender providers` CLI: lists configured providers, models, defaults; `--config` flag
-- Wayfinder: ticket 01 (Foundation) resolved — Plan 1 shipped, 02 (Guardrail) now unblocked
+- Wayfinder: ticket 01 (Foundation) resolved — Plan 1 shipped; ticket 02 (Guardrail) claimed
 - Wayfinder map: `.scratch/fender/` — 8 build-phase tickets, 01 Foundation claimed, 02–08 blocked in AGENTS.md build order
