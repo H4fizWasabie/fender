@@ -108,3 +108,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: ticket 06 resolved — skills delivered; frontier → 07 (CodeIntel)
+
+### Added
+- Ticket 07 spec: codeintel design (D16/D19/D20/D34-3) — tree-sitter extraction (Go/Python/TS), JSON incremental store, graph build, query API, MAP.md generation
