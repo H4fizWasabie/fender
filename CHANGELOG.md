@@ -239,3 +239,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Consolidation (D43/ticket 13): session-end small-model distillation → facts (dedup .md files) + episodes; background at quit/EOF
+
+### Added
+- REPL polish (ticket 14): status colors (green/yellow/red), prompt shows mode + model (dimmed)

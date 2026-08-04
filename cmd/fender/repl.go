@@ -62,7 +62,13 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) e
 	defer signal.Stop(sig)
 
 	for {
-		fmt.Fprint(out, "> ")
+		model := "?"
+		if state.agent != nil {
+			if c, ok := state.agent.LLM.(*provider.Client); ok {
+				model = c.Name() + "/" + c.Model()
+			}
+		}
+		fmt.Fprintf(out, "\x1b[2m[%s %s]\x1b[0m > ", state.mode, model)
 		line, err := in.ReadString('\n')
 		if err != nil { // EOF
 			fmt.Fprintln(out)
@@ -253,6 +259,15 @@ func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
 		}
 		fmt.Fprintf(out, "\n  [tool %s: %s]\n", e.Text, status)
 	case "done":
-		fmt.Fprintf(out, "\n<%s>\n", e.Status)
+		color := ""
+		switch e.Status {
+		case "complete":
+			color = "\x1b[32m" // green
+		case "blocked":
+			color = "\x1b[33m" // yellow
+		case "error", "stalled", "cancelled":
+			color = "\x1b[31m" // red
+		}
+		fmt.Fprintf(out, "\n%s<%s>\x1b[0m\n", color, e.Status)
 	}
 }
