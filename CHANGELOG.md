@@ -124,3 +124,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - codeintel langSpec: Go symbol kind is "function_declaration" (tree-sitter), not "func_declaration" — plan doc corrected (execution-caught plan bug)
+
+### Added
+- Store: Open/Refresh (mtime+size stamps, dirty-only re-extract, skip dirs), extractions cache, graph.json persist
