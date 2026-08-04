@@ -81,3 +81,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Plan 6 (skills): `docs/superpowers/plans/2026-08-04-fender-skills.md` — vendor, parser, registry, matching, agent wiring, skill install (7 tasks)
+
+### Added
+- Vendored 23 bundled skills into internal/skills/bundled/ (MIT, attribution; Codex yaml excluded)
