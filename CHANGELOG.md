@@ -152,3 +152,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: ticket 07 resolved — codeintel delivered; frontier → 08 (CLI + UI). "Not yet specified" cleared: incremental index mechanics resolved
+
+### Added
+- Pinned tree-sitter dependency versions in go.mod (go1.22-compatible set)
