@@ -87,3 +87,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Skills: frontmatter parser (single-line/quoted/folded, disable-model-invocation), Bundled() go:embed loader — all 23 parse
+
+### Added
+- Skills registry: Load (missing dir = empty, broken skipped), Merge (project > user > bundled), ByName, Descriptions (4K cap), PonytailCore
