@@ -23,10 +23,10 @@ Fender v1: a working, from-scratch Go coding agent — single binary, OpenAI-com
 - [04-Context](issues/04-Context.md) — Plan 4 done: internal/context artifact engineering (8K rule, HEAD/TAIL, For() budget arithmetic ≤ ContextChars, artifact catalog, 24h sweep, Child() isolation); loop wired; shell cap 8 MiB; budget-bound test first-class (acceptance #3). Unblocks 05.
 - [05-Memory](issues/05-Memory.md) — Plan 5 done: .fender/ workspace (Ensure idempotent), convention detection + direct load (user→project AGENTS.md/CLAUDE.md→CONTEXT.md), always-loaded System (8K cap, canonical-sources enforced), working prune (7d, patterns.md exempt); agent Mem nil-safe, delegates share. Memory graph/consolidation/facts deferred to D9 era (user-approved). Unblocks 06.
 - [06-Skills](issues/06-Skills.md) — Plan 6 done: 23 skills vendored (MIT) + regex frontmatter parser + Bundled() + registry (Merge shadowing) + Match (word-overlap, model-invokable only) + load_skill tool + skill install; catalog model-invokable-only (cap 6000). Unblocks 07.
+- [07-CodeIntel](issues/07-CodeIntel.md) — Plan 7 done: tree-sitter extraction (go/python/ts/js, langSpec tables), incremental store (stamps), graph build (call resolution), query API, MAP.md generation, intel CLI; Fender self-indexed 73 files; 4 execution-caught bugs fixed. Cluster/embeddings deferred. Unblocks 08.
 
 ## Not yet specified
 
-- Code-intel incremental index mechanics — biggest unknown; sharpens when Plan 7 starts (graphify pipeline port).
 
 ## Out of scope
 

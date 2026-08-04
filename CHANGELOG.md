@@ -149,3 +149,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Fixed
 - codeintel searcher: SourceFile already absolute — removed double Join (execution-caught)
 - intel map: Ensure() memory workspace before writing MAP.md
+
+### Changed
+- Wayfinder: ticket 07 resolved — codeintel delivered; frontier → 08 (CLI + UI). "Not yet specified" cleared: incremental index mechanics resolved
