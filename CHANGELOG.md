@@ -7,6 +7,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Added
 - Spec: `docs/superpowers/specs/2026-08-04-fender-context-design.md` — ticket 04 design: internal/context artifact engineering (D31 port) + D38 in DECISIONS.md (artifact root /tmp, per-agent managers, cap policy, D9 migration seam)
 - Plan: `docs/superpowers/plans/2026-08-04-fender-context.md` — ticket 04 implementation plan (7 tasks, test-first; budget-bound test as first-class task, acceptance #3)
+- `internal/context`: Manager core — 8K rule (CompactOutput), artifact write (0700/0600, per-call paths), catalog, 24h Cleanup sweep (D31/D38)
 - Design session (2026-08-04): full Fender design locked in `DECISIONS.md` (D1–D37) and `docs/superpowers/specs/2026-08-04-fender-design.md`
 - `AGENTS.md` — project constitution; every agent session must follow the decision log
 - `.githooks/pre-commit` — enforces the changelog rule; install with `git config core.hooksPath .githooks`
