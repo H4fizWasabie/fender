@@ -105,3 +105,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - `fender skill install <src>`: copies skill dirs from local path or git URL into .fender/skills/
+
+### Changed
+- Wayfinder: ticket 06 resolved — skills delivered; frontier → 07 (CodeIntel)
