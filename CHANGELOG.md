@@ -201,3 +201,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Added
 - Reply-on-done rendering: complete_task answers now display in the REPL (done event carries the reply; printed when no deltas streamed)
 - Wayfinder: ticket 09 resolved — thinking mode delivered (frontier: post-v1 backlog)
+
+### Added
+- Ticket 10: session persistence spec (D41) — history save/resume, artifact-pointer compatible

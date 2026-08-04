@@ -52,6 +52,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D40 | **Thinking mode (ticket 09) — pi-style level map.** Per-model config: `thinking = true\|false` + `thinking_levels = { low = "low", medium = "medium", high = "high" }` (provider values; null = unsupported; omission = identity; `off` always omits the field). REPL `/thinking off\|low\|medium\|high` clamps to the model's map. Request sends `reasoning_effort` when level set (verified accepted by opencode zen gateway). Client parses `reasoning_content` (stream + non-stream) → observer `"thinking"` events → dimmed rendering when level != off. **Rule: never set max_tokens on reasoning models** (the "F" bug — reasoning consumes the budget; leave 0 = provider ceiling). |
 
+| D41 | **Session persistence (ticket 10) — D9 delivered.** REPL history persists to `.fender/sessions/<id>.json` (messages array); auto-save after every turn + on quit; `fender` auto-resumes the latest session (flag `--new` starts fresh); `fender sessions` lists them. Works with the artifact layer for free: history carries absolute artifact pointers and /tmp artifacts survive the 24h sweep window. Session files are user-local — `.fender/` is gitignored. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)
