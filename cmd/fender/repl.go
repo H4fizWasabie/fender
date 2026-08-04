@@ -35,18 +35,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 			return err
 		}
 		a.Observer = func(e agent.Event) {
-			switch e.Kind {
-			case "delta":
-				fmt.Fprint(out, e.Text)
-			case "tool":
-				status := e.Status
-				if status == "" {
-					status = "ok"
-				}
-				fmt.Fprintf(out, "\n  [tool %s: %s]\n", e.Text, status)
-			case "done":
-				fmt.Fprintf(out, "\n<%s>\n", e.Status)
-			}
+			renderEvent(out, e, state.thinking != "")
 		}
 		state.agent = a
 		state.skills = a.Skills
@@ -106,12 +95,13 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string) error {
 
 // replState carries the REPL's mutable state between turns.
 type replState struct {
-	cfgPath string
-	mode    guardrail.Mode
-	agent   *agent.Agent
-	skills  *skills.Registry
-	history []provider.Message
-	rebuild func() error
+	cfgPath  string
+	mode     guardrail.Mode
+	agent    *agent.Agent
+	skills   *skills.Registry
+	history  []provider.Message
+	thinking string // "" = hidden (off); non-empty = show dimmed
+	rebuild  func() error
 }
 
 // slash handles one slash command; returns quit=true for /quit.
@@ -121,7 +111,7 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 	case "/quit":
 		return true, nil
 	case "/help":
-		fmt.Fprintln(out, "commands: /quit /model <provider> /mode <strict|balanced|yolo> /skills /help")
+		fmt.Fprintln(out, "commands: /quit /model <provider> /mode <strict|balanced|yolo> /thinking <off|low|medium|high> /skills /help")
 		return false, nil
 	case "/model":
 		if len(parts) < 2 {
@@ -163,6 +153,27 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 		}
 		fmt.Fprintf(out, "mode -> %s\n", m)
 		return false, nil
+	case "/thinking":
+		if len(parts) < 2 {
+			return false, fmt.Errorf("usage: /thinking <off|low|medium|high>")
+		}
+		level := parts[1]
+		if level != "off" && level != "low" && level != "medium" && level != "high" {
+			return false, fmt.Errorf("invalid level %q (off|low|medium|high)", level)
+		}
+		c, ok := st.agent.LLM.(*provider.Client)
+		if !ok {
+			return false, fmt.Errorf("current LLM has no thinking control")
+		}
+		if err := c.SetThinking(level); err != nil {
+			return false, err
+		}
+		if level == "off" {
+			level = ""
+		}
+		st.thinking = level
+		fmt.Fprintf(out, "thinking -> %s\n", parts[1])
+		return false, nil
 	case "/skills":
 		if st.skills == nil {
 			return false, fmt.Errorf("skills registry unavailable")
@@ -180,4 +191,25 @@ func validMode(m guardrail.Mode) bool {
 		return true
 	}
 	return false
+}
+
+// renderEvent draws one observer event (ticket-08 renderer seam). Thinking
+// deltas render dimmed only when showThinking is set (D40).
+func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
+	switch e.Kind {
+	case "delta":
+		fmt.Fprint(out, e.Text)
+	case "thinking":
+		if showThinking {
+			fmt.Fprintf(out, "\x1b[2m%s\x1b[0m", e.Text)
+		}
+	case "tool":
+		status := e.Status
+		if status == "" {
+			status = "ok"
+		}
+		fmt.Fprintf(out, "\n  [tool %s: %s]\n", e.Text, status)
+	case "done":
+		fmt.Fprintf(out, "\n<%s>\n", e.Status)
+	}
 }

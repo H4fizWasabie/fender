@@ -194,3 +194,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Added
 - Thinking wire format: reasoning_content parsed (stream + non-stream), reasoning_effort per level, per-model model_configs (thinking/thinking_levels), Client.SetThinking
 - Observer thinking events (Streamer onThinking, dimmed-ready)
+
+### Added
+- REPL: /thinking <off|low|medium|high> — reasoning_effort control + dimmed thinking rendering (hidden at off)
