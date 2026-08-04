@@ -47,7 +47,7 @@ fender/
 
 ## Code quality
 
-- **Go stdlib first.** No external dependency without explicit discussion. Allowed so far: `mvdan.cc/sh/v3`, `go-tree-sitter`, `modernc.org/sqlite` (pure Go, no CGO). That's the whole list — anything else is a discussion.
+- **Go stdlib first.** No external dependency without explicit discussion. Allowed so far: `BurntSushi/toml`, `mvdan.cc/sh/v3`, `go-tree-sitter`, `modernc.org/sqlite` (pure Go, no CGO). That's the whole list — anything else is a discussion.
 - **Single binary.** Everything embedded via `embed.FS` (skills, grammars). One `go build`.
 - **Readable in an afternoon.** Core modules ~100 lines each; if it's growing, split it.
 - **No panic in library code.** Explicit errors, `log/slog` for logging.
