@@ -102,3 +102,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Skills catalog: model-invokable skills only (user-invoked are slash-command-only), cap 4000 -> 6000 (full 14-skill catalog is 4508 chars)
+
+### Added
+- `fender skill install <src>`: copies skill dirs from local path or git URL into .fender/skills/

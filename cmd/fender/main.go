@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/H4fizWasabie/fender/internal/provider"
+	"github.com/H4fizWasabie/fender/internal/skills"
 )
 
 const version = "0.1.0"
@@ -33,16 +35,44 @@ func runCLI(out io.Writer, args []string) error {
 		return err
 	}
 	if fs.NArg() == 0 {
-		fmt.Fprintln(out, "usage: fender [--config PATH] providers")
-		fmt.Fprintln(out, "  providers   list configured providers")
+		fmt.Fprintln(out, "usage: fender [--config PATH] <command>")
+		fmt.Fprintln(out, "  providers          list configured providers")
+		fmt.Fprintln(out, "  skill install SRC  install skills from a local path or git URL")
 		return nil
 	}
 	switch fs.Arg(0) {
 	case "providers":
 		return listProviders(out, *configPath)
+	case "skill":
+		return skillCommand(out, fs.Args()[1:])
 	default:
 		return fmt.Errorf("unknown command %q", fs.Arg(0))
 	}
+}
+
+func skillCommand(out io.Writer, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: fender skill install <src>")
+	}
+	switch args[0] {
+	case "install":
+		if len(args) < 2 {
+			return fmt.Errorf("usage: fender skill install <src>")
+		}
+		return installSkills(out, args[1])
+	default:
+		return fmt.Errorf("unknown skill command %q", args[0])
+	}
+}
+
+func installSkills(out io.Writer, src string) error {
+	dest := filepath.Join(".fender", "skills")
+	names, err := skills.Install(src, dest)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "installed %d skill(s): %s\n", len(names), strings.Join(names, ", "))
+	return nil
 }
 
 func listProviders(out io.Writer, configPath string) error {
