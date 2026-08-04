@@ -95,6 +95,9 @@ func (c *Client) BaseURL() string  { return c.base }
 func (c *Client) Models() []string { return c.models }
 
 func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
+	if req.Model == "" {
+		req.Model = c.model // the loop sends no model; the client knows its own
+	}
 	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -132,6 +135,9 @@ type streamChunk struct {
 }
 
 func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string)) (*Response, error) {
+	if req.Model == "" {
+		req.Model = c.model
+	}
 	req.Stream = true
 	body, err := json.Marshal(req)
 	if err != nil {

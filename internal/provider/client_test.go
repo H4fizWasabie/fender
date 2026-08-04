@@ -78,3 +78,41 @@ func TestChatReturnsErrorOnNon200(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestChatDefaultsModel(t *testing.T) {
+	var gotModel string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		gotModel, _ = body["model"].(string)
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"choices":[{"message":{"role":"assistant","content":"ok"}}]}`)
+	}))
+	defer srv.Close()
+	c := New("mock", Provider{BaseURL: srv.URL, APIKey: "k", DefaultModel: "m1"})
+	if _, err := c.Chat(context.Background(), Request{Messages: []Message{{Role: "user", Content: "hi"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if gotModel != "m1" {
+		t.Fatalf("model = %q", gotModel)
+	}
+}
+
+func TestStreamDefaultsModel(t *testing.T) {
+	var gotModel string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		gotModel, _ = body["model"].(string)
+		w.Header().Set("Content-Type", "text/event-stream")
+		io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n")
+	}))
+	defer srv.Close()
+	c := New("mock", Provider{BaseURL: srv.URL, APIKey: "k", DefaultModel: "m1"})
+	if _, err := c.Stream(context.Background(), Request{Messages: []Message{{Role: "user", Content: "hi"}}}, func(string) {}); err != nil {
+		t.Fatal(err)
+	}
+	if gotModel != "m1" {
+		t.Fatalf("model = %q", gotModel)
+	}
+}
