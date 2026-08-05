@@ -257,3 +257,9 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 15: repo gaps — nested AGENTS.md (read/edit prepend dir-scoped rules), dashboard port-conflict message, README, MIT LICENSE, GitHub Actions CI, v0.1.0 tag, repo made public
+
+### Added
+- Subagent provider routing completed (D47): thinking-level propagation to children, delegate result names the provider (via <provider> / via parent-model); live-verified parent→zen subagent
+
+### Deferred
+- Parallel subagent dispatch (D8): loop is sequential by design; N-goroutine join needs its own ticket

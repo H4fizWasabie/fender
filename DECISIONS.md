@@ -64,6 +64,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D46 | **Repo gaps closed (ticket 15).** Nested AGENTS.md wired: read/edit tools prepend directory-scoped rules via a nil-safe RuleLoader (memory.NestedRules walks up from the target dir; root rules excluded — already loaded). Dashboard port-conflict detection (clear error naming the stale process). README, MIT LICENSE, GitHub Actions CI (build/vet/test + changelog check), v0.1.0 tag. **Repo made public.** |
 
+| D47 | **Subagent provider routing completed (ticket 15b).** delegate already routed per-provider via Resolver (own key/base/models per fender.toml — live-verified: parent delegated to zen subagent, SUBAGENT-OK returned). Completed: thinking-level propagation (child inherits parent's /thinking when both support it) + provider observability (result names `via <provider>` / `via parent-model`). **Still deferred (D8): parallel subagents — the loop executes tool calls sequentially; N-goroutine join needs loop restructuring, own ticket.** |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

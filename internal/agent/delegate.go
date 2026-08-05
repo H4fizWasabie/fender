@@ -36,6 +36,7 @@ func (a *Agent) delegateTool() tools.Tool {
 				return "", errors.New("delegate: empty prompt")
 			}
 			llm := a.LLM
+			providerName := ""
 			if name, _ := args["provider"].(string); name != "" {
 				if a.Resolver == nil {
 					return "", fmt.Errorf("delegate: provider %q requested but no resolver is configured", name)
@@ -45,6 +46,14 @@ func (a *Agent) delegateTool() tools.Tool {
 					return "", fmt.Errorf("delegate: %v", err)
 				}
 				llm = child
+				providerName = name
+			}
+			// thinking-level propagation (D47): the child inherits the
+			// parent's /thinking level when both support it
+			if pc, ok := a.LLM.(interface{ Thinking() string }); ok {
+				if tc, ok := llm.(interface{ SetThinking(string) error }); ok && pc.Thinking() != "" {
+					tc.SetThinking(pc.Thinking())
+				}
 			}
 			child := &Agent{
 				LLM:        llm,
@@ -66,7 +75,11 @@ func (a *Agent) delegateTool() tools.Tool {
 			select {
 			case res := <-ch:
 				if res.Status == "complete" || res.Status == "blocked" {
-					return fmt.Sprintf("[delegate %s] %s", res.Status, res.Reply), nil
+					who := "parent-model"
+					if providerName != "" {
+						who = providerName
+					}
+					return fmt.Sprintf("[delegate %s via %s] %s", res.Status, who, res.Reply), nil
 				}
 				return "", fmt.Errorf("delegate %s: %s", res.Status, res.Reply)
 			case <-ctx.Done():

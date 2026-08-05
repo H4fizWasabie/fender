@@ -27,7 +27,7 @@ func TestDelegate(t *testing.T) {
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate complete] 3 files found") {
+	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate complete via child] 3 files found") {
 		t.Fatalf("tool result = %q", got)
 	}
 	// The child ran its own loop with its own LLM and no delegate tool.
@@ -60,7 +60,7 @@ func TestDelegateInheritsParentLLM(t *testing.T) {
 	if res.Status != "complete" || res.Reply != "parent done" {
 		t.Fatalf("res = %+v", res)
 	}
-	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate complete] done") {
+	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate complete via parent-model] done") {
 		t.Fatalf("tool result = %q", got)
 	}
 }
@@ -92,7 +92,7 @@ func TestDelegateBlocked(t *testing.T) {
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate blocked] need access") {
+	if got := lastToolResult(t, parent); !strings.Contains(got, "[delegate blocked via child] need access") {
 		t.Fatalf("tool result = %q", got)
 	}
 }
