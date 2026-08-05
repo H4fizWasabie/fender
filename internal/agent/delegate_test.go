@@ -153,3 +153,48 @@ func TestDelegateChildGetsOwnContext(t *testing.T) {
 		t.Fatal("child artifact recorded in parent catalog")
 	}
 }
+
+// D48: subagent events stream through the parent observer, source-tagged.
+func TestDelegateStreamsSourceTaggedEvents(t *testing.T) {
+	child := &fakeLLM{steps: []*provider.Response{completeReply("complete", "3 files found")}}
+	parent := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "delegate", `{"prompt":"count the files","provider":"child"}`),
+		completeReply("complete", "parent done"),
+	}}
+	a, _ := newTestAgent(t, parent)
+	a.Resolver = func(name string) (LLM, error) { return child, nil }
+	var events []Event
+	a.Observer = func(e Event) { events = append(events, e) }
+	a.Run(context.Background(), []provider.Message{{Role: "user", Content: "delegate it"}})
+	sawChildDelta := false
+	for _, e := range events {
+		if e.Source == "subagent:child" {
+			sawChildDelta = true
+		}
+	}
+	if !sawChildDelta {
+		t.Fatalf("no source-tagged subagent events: %+v", events)
+	}
+}
+
+// D48: config `subagent =` provides the default provider for delegates
+// that omit the provider argument.
+func TestDelegateDefaultSubagent(t *testing.T) {
+	child := &fakeLLM{steps: []*provider.Response{completeReply("complete", "done")}}
+	parent := &fakeLLM{steps: []*provider.Response{
+		toolReply("call_1", "delegate", `{"prompt":"go"}`), // no provider arg
+		completeReply("complete", "parent done"),
+	}}
+	a, _ := newTestAgent(t, parent)
+	a.DefaultSubagent = "default-child"
+	a.Resolver = func(name string) (LLM, error) {
+		if name != "default-child" {
+			t.Fatalf("resolver got %q, want default-child", name)
+		}
+		return child, nil
+	}
+	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "delegate"}})
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+}

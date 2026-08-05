@@ -66,6 +66,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D47 | **Subagent provider routing completed (ticket 15b).** delegate already routed per-provider via Resolver (own key/base/models per fender.toml — live-verified: parent delegated to zen subagent, SUBAGENT-OK returned). Completed: thinking-level propagation (child inherits parent's /thinking when both support it) + provider observability (result names `via <provider>` / `via parent-model`). **Still deferred (D8): parallel subagents — the loop executes tool calls sequentially; N-goroutine join needs loop restructuring, own ticket.** |
 
+| D48 | **Parallel subagents + identity (ticket 16).** Loop tool-execution phase fans out independent calls in one turn (N goroutines + WaitGroup join, ordered results, dedup checked pre-dispatch; context.Manager made thread-safe — deadlock fixes + race-clean). **Identity**: Agent.Name (main / subagent:<provider>); subagent live streams flow through the parent observer source-tagged (Event.Source); REPL renders magenta `[subagent:zen]` prefixes, dashboard tags likewise, subagent done-events suppressed (the delegate tool result reports them). **Config**: top-level `subagent = "provider"` — delegates omitting `provider` route there (else inherit parent). Live-verified: parent→zen subagent round trip. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

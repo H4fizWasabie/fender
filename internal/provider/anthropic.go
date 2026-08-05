@@ -63,13 +63,13 @@ type anthropicWire struct {
 // ---- wire types ----
 
 type anthroContent struct {
-	Type     string `json:"type"` // text | tool_use | tool_result
-	Text     string `json:"text,omitempty"`
-	ID       string `json:"id,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Input    any    `json:"input,omitempty"`
+	Type      string `json:"type"` // text | tool_use | tool_result
+	Text      string `json:"text,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Input     any    `json:"input,omitempty"`
 	ToolUseID string `json:"tool_use_id,omitempty"`
-	Content  any    `json:"content,omitempty"` // tool_result content
+	Content   any    `json:"content,omitempty"` // tool_result content
 }
 
 type anthroMessage struct {
@@ -84,12 +84,12 @@ type anthroTool struct {
 }
 
 type anthroRequest struct {
-	Model       string          `json:"model"`
-	MaxTokens   int             `json:"max_tokens"`
-	System      string          `json:"system,omitempty"`
-	Messages    []anthroMessage `json:"messages"`
-	Tools       []anthroTool    `json:"tools,omitempty"`
-	Stream      bool            `json:"stream,omitempty"`
+	Model     string          `json:"model"`
+	MaxTokens int             `json:"max_tokens"`
+	System    string          `json:"system,omitempty"`
+	Messages  []anthroMessage `json:"messages"`
+	Tools     []anthroTool    `json:"tools,omitempty"`
+	Stream    bool            `json:"stream,omitempty"`
 }
 
 type anthroResponse struct {
@@ -236,10 +236,10 @@ func (w *anthropicWire) StreamChat(ctx context.Context, req Request, onDelta fun
 		var ev struct {
 			Type  string `json:"type"`
 			Delta struct {
-				Type         string `json:"type"`
-				Text         string `json:"text"`
-				PartialJSON  string `json:"partial_json"`
-				Thinking     string `json:"thinking"`
+				Type        string `json:"type"`
+				Text        string `json:"text"`
+				PartialJSON string `json:"partial_json"`
+				Thinking    string `json:"thinking"`
 			} `json:"delta"`
 			ContentBlock struct {
 				Type  string `json:"type"`

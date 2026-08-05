@@ -56,21 +56,23 @@ function ensure(kind) {
 
 es.onmessage = (e) => {
   const ev = JSON.parse(e.data);
+  const tag = ev.source ? '[' + ev.source + '] ' : '';
   switch (ev.kind) {
     case 'delta':
-      ensure('assistant').textContent += ev.text;
+      ensure('assistant').textContent += tag + ev.text;
       break;
     case 'thinking':
       if (!document.getElementById('showThinking').checked) break;
       // collapse mid-word whitespace fragments ("Pon\nyt\nail") — thinking
       // is stream-of-consciousness, not formatting
-      ensure('thinking').textContent += ev.text.replace(/\s+/g, ' ');
+      ensure('thinking').textContent += tag + ev.text.replace(/\s+/g, ' ');
       break;
     case 'tool':
       current = null;
-      append('tool', '[tool ' + ev.text + ': ' + (ev.status || 'ok') + ']');
+      append('tool', tag + '[tool ' + ev.text + ': ' + (ev.status || 'ok') + ']');
       break;
     case 'done':
+      if (ev.source) break; // subagent completion arrives via the delegate result
       current = null;
       append('status' + (ev.status === 'complete' ? '' : '.' + ev.status), '<' + ev.status + '>');
       if (ev.text) append('assistant', ev.text); // reply via complete_task args

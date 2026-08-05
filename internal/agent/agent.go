@@ -6,6 +6,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
@@ -25,9 +26,10 @@ type LLM interface {
 // JSON tags are load-bearing: the dashboard SSE (ticket 12) marshals events
 // and the browser switches on lowercase keys.
 type Event struct {
-	Kind   string `json:"kind"`   // "delta" | "thinking" | "tool" | "done"
-	Text   string `json:"text"`   // delta text / tool description / final reply
-	Status string `json:"status"` // tool status ("ok"|"error"|"cached") or result status
+	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "done"
+	Text   string `json:"text"`             // delta text / tool description / final reply
+	Status string `json:"status"`           // tool status ("ok"|"error"|"cached") or result status
+	Source string `json:"source,omitempty"` // "" = main agent; "subagent:<provider>" (D48)
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
@@ -45,16 +47,18 @@ const (
 // Agent is one loop: model + tools + discipline. The same type runs the
 // parent and every subagent (D13).
 type Agent struct {
-	LLM        LLM
-	Resolver   Resolver // subagent provider selection (D7); nil -> inherit parent LLM
-	System     string
-	MaxIter    int              // 0 -> defaultMaxIter
-	MaxSubIter int              // 0 -> defaultMaxSubIter
-	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
-	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
-	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
-	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
-	registry   *tools.Registry
+	Name            string // "main" (default) or "subagent:<provider>" (D48)
+	DefaultSubagent string // provider used when delegate omits "provider" (config `subagent =`)
+	LLM             LLM
+	Resolver        Resolver // subagent provider selection (D7); nil -> inherit parent LLM
+	System          string
+	MaxIter         int              // 0 -> defaultMaxIter
+	MaxSubIter      int              // 0 -> defaultMaxSubIter
+	Ctx             *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Observer        func(Event)      // renderer seam (ticket 08); nil-safe
+	Mem             *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
+	Skills          *skills.Registry // D27 skills; nil = ticket-05 behavior
+	registry        *tools.Registry
 }
 
 // NewAgent wires llm to reg and registers the delegate tool (D13).
@@ -157,8 +161,18 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		}
 
 		// Act: execute each tool call; observe: feed results back.
+		// Parallel dispatch (D48): independent calls in one turn run
+		// concurrently (N goroutines, join) — subagents especially benefit.
 		progress := false
 		var executedKey string
+		type pending struct {
+			tc     provider.ToolCall
+			key    string
+			cached bool
+			out    string
+			err    error
+		}
+		var pendings []pending
 		for _, tc := range msg.ToolCalls {
 			if tc.Function.Name == completionToolName {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: completionError})
@@ -166,29 +180,51 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			}
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
 			if out, ok := dedup[key]; ok {
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
+				pendings = append(pendings, pending{tc: tc, key: key, cached: true, out: out})
 				executedKey = key // repeat detection: cached calls are not progress
+				continue
+			}
+			pendings = append(pendings, pending{tc: tc, key: key})
+		}
+		// launch unique calls concurrently (D48), join, collect in order
+		var wg sync.WaitGroup
+		for i := range pendings {
+			p := &pendings[i]
+			if p.cached {
+				continue
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				out, err := a.registry.Execute(ctx, p.tc.Function.Name, p.tc.Function.Arguments)
+				if err == nil && a.Ctx != nil {
+					out = a.Ctx.CompactOutput(p.tc.Function.Name, out)
+				}
+				p.out, p.err = out, err
+			}()
+		}
+		wg.Wait()
+		for _, p := range pendings {
+			tc := p.tc
+			if p.cached {
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + p.out})
 				if a.Observer != nil {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached"})
 				}
 				continue
 			}
-			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
-			if err != nil {
+			if p.err != nil {
 				errors++
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + p.err.Error()})
 				if a.Observer != nil {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error"})
 				}
 				continue
 			}
-			if a.Ctx != nil {
-				out = a.Ctx.CompactOutput(tc.Function.Name, out)
-			}
-			dedup[key] = out
-			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})
+			dedup[p.key] = p.out
+			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: p.out})
 			progress = true
-			executedKey = key
+			executedKey = p.key
 			if a.Observer != nil {
 				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok"})
 			}

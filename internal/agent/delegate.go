@@ -38,15 +38,19 @@ func (a *Agent) delegateTool() tools.Tool {
 			llm := a.LLM
 			providerName := ""
 			if name, _ := args["provider"].(string); name != "" {
+				providerName = name
+			} else if a.DefaultSubagent != "" { // config `subagent =` (D48)
+				providerName = a.DefaultSubagent
+			}
+			if providerName != "" {
 				if a.Resolver == nil {
-					return "", fmt.Errorf("delegate: provider %q requested but no resolver is configured", name)
+					return "", fmt.Errorf("delegate: provider %q requested but no resolver is configured", providerName)
 				}
-				child, err := a.Resolver(name)
+				child, err := a.Resolver(providerName)
 				if err != nil {
 					return "", fmt.Errorf("delegate: %v", err)
 				}
 				llm = child
-				providerName = name
 			}
 			// thinking-level propagation (D47): the child inherits the
 			// parent's /thinking level when both support it
@@ -55,15 +59,29 @@ func (a *Agent) delegateTool() tools.Tool {
 					tc.SetThinking(pc.Thinking())
 				}
 			}
+			childName := "subagent:parent-model"
+			if providerName != "" {
+				childName = "subagent:" + providerName
+			}
 			child := &Agent{
-				LLM:        llm,
-				Resolver:   a.Resolver,
-				System:     subagentSystem,
-				MaxIter:    a.subIter(),
-				MaxSubIter: a.MaxSubIter,
-				registry:   a.registry.Without("delegate"),
-				Mem:        a.Mem,    // D39: delegates share project memory (artifact context still isolated below)
-				Skills:     a.Skills, // D27: delegates share the skill registry
+				Name:            childName,
+				LLM:             llm,
+				Resolver:        a.Resolver,
+				System:          subagentSystem,
+				MaxIter:         a.subIter(),
+				MaxSubIter:      a.MaxSubIter,
+				registry:        a.registry.Without("delegate"),
+				Mem:             a.Mem,    // D39: delegates share project memory (artifact context still isolated below)
+				Skills:          a.Skills, // D27: delegates share the skill registry
+				DefaultSubagent: a.DefaultSubagent,
+			}
+			// D48: the subagent's live stream flows through the parent's
+			// observer, source-tagged so renderers can distinguish it.
+			if a.Observer != nil {
+				child.Observer = func(e Event) {
+					e.Source = childName
+					a.Observer(e)
+				}
 			}
 			if a.Ctx != nil {
 				child.Ctx = a.Ctx.Child() // D38: isolated artifacts + catalog

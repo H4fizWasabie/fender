@@ -243,22 +243,30 @@ func validMode(m guardrail.Mode) bool {
 }
 
 // renderEvent draws one observer event (ticket-08 renderer seam). Thinking
-// deltas render dimmed only when showThinking is set (D40).
+// deltas render dimmed only when showThinking is set (D40). Subagent events
+// (D48) carry a source prefix so main vs subagent output is distinct.
 func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
+	prefix := ""
+	if e.Source != "" {
+		prefix = "\x1b[35m[" + e.Source + "]\x1b[0m " // magenta tag
+	}
 	switch e.Kind {
 	case "delta":
-		fmt.Fprint(out, e.Text)
+		fmt.Fprint(out, prefix, e.Text)
 	case "thinking":
 		if showThinking {
-			fmt.Fprintf(out, "\x1b[2m%s\x1b[0m", e.Text)
+			fmt.Fprintf(out, "\x1b[2m%s%s\x1b[0m", prefix, e.Text)
 		}
 	case "tool":
 		status := e.Status
 		if status == "" {
 			status = "ok"
 		}
-		fmt.Fprintf(out, "\n  [tool %s: %s]\n", e.Text, status)
+		fmt.Fprintf(out, "\n  %s[tool %s: %s]\n", prefix, e.Text, status)
 	case "done":
+		if e.Source != "" {
+			return // subagent completion is reported via the delegate tool result
+		}
 		color := ""
 		switch e.Status {
 		case "complete":

@@ -40,10 +40,14 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 	}
 
 	mode := guardrail.Balanced
+	subagentProvider := ""
 	if cfgPath != "" {
 		var cfg provider.Config
-		if _, err := toml.DecodeFile(cfgPath, &cfg); err == nil && cfg.Mode != "" {
-			mode = guardrail.Mode(cfg.Mode)
+		if _, err := toml.DecodeFile(cfgPath, &cfg); err == nil {
+			if cfg.Mode != "" {
+				mode = guardrail.Mode(cfg.Mode)
+			}
+			subagentProvider = cfg.Subagent // D48: default subagent provider
 		}
 	}
 	if modeOverride != nil {
@@ -86,6 +90,7 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 
 	a := agent.NewAgent(llm, regTools)
 	a.System = defaultSystem
+	a.DefaultSubagent = subagentProvider
 	a.Mem = mem
 	a.Skills = regSkills
 	a.Ctx = ctxpkg.New()

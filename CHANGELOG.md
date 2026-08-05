@@ -266,3 +266,8 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - context.Manager thread-safety: mutex on catalog/turn; fixed self-deadlock (record re-lock) and copylocks deadlock (Child() copied the locked mutex) — race detector clean across all packages
+
+### Added
+- Parallel subagent dispatch (D48): concurrent tool calls per turn (goroutines + join), context Manager thread-safe (deadlock fixes, race-clean)
+- Main vs subagent identity: source-tagged events ([subagent:zen]) in REPL + dashboard, live subagent streaming
+- Config `subagent = "provider"`: default provider for delegates without explicit provider
