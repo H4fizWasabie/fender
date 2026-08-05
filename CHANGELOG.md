@@ -26,6 +26,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - One-shot `ask` model calls, provider-selectable child agents, and provider-based child identity (D47–D49 superseded by D50).
 
 ### Fixed
+- Dashboard settings now loads its click controller and has a real drawer/scrim state; the desktop workbench is viewport-contained so growing evidence scrolls inside its lane instead of pulling the whole page.
 - Centered Docket reload/resume now reconstructs completion only for explicit terminal states, atomically couples durable completion evidence to terminal session persistence, labels abandoned `working` sessions as editable interruptions, persists real tool/approval/completion evidence, exposes bounded tool-result previews behind disclosure, and reports session-write failures instead of silently claiming resumability.
 - `fender run --config X` now honors the config file instead of falling back to ~/.fender/fender.toml (runTask threads configPath through to buildAgent); TestRunCommand pinned to a throwaway config so it never calls a real provider
 
@@ -319,3 +320,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Runaway-loop (D52): shell commands normalized for dedup (cosmetic variants collapse), failing commands dedup too — the 505× go test loop is dead; thrash detection catches re-runs after ~3 variants
+
+### Fixed
+- fender init no longer writes a placeholder config that shadows the global ~/.fender/fender.toml (the "re-add your key" trap); prints providers-from-global instead

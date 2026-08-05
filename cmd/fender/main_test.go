@@ -72,3 +72,27 @@ func TestInitCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestInitSkipsLocalConfigWhenGlobalExists(t *testing.T) {
+	// global config exists → init must NOT write a shadowing placeholder
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	os.MkdirAll(filepath.Join(home, ".fender"), 0700)
+	os.WriteFile(filepath.Join(home, ".fender", "fender.toml"), []byte("mode = \"yolo\"\n"), 0600)
+
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+
+	var out bytes.Buffer
+	if err := runCLI(&out, []string{"init"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "fender.toml")); err == nil {
+		t.Fatal("local placeholder config written despite global config")
+	}
+	if !strings.Contains(out.String(), "providers come from") {
+		t.Fatalf("output = %q", out.String())
+	}
+}

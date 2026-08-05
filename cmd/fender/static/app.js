@@ -2,6 +2,7 @@ import { ui, state } from './dom.js';
 import { api } from './api.js';
 import { appendMessage, setConnection, setRunStatus, showToast } from './docket.js';
 import { addSlip, handleEvent } from './evidence.js';
+import './settings.js';
 import {
   closeMobileIndex,
   closeSessions,

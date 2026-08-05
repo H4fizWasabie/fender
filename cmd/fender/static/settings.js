@@ -6,10 +6,12 @@ const body = document.getElementById('settingsBody');
 let providers = [];
 
 export function openSettings() {
+  document.body.classList.add('settings-open');
   drawer.setAttribute('aria-hidden', 'false');
   renderSettings();
 }
 export function closeSettings() {
+  document.body.classList.remove('settings-open');
   drawer.setAttribute('aria-hidden', 'true');
 }
 
@@ -77,6 +79,9 @@ async function renderSettings() {
 document.getElementById('settingsGear').addEventListener('click', openSettings);
 document.getElementById('closeSettings').addEventListener('click', closeSettings);
 document.getElementById('settingsScrim').addEventListener('click', closeSettings);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeSettings();
+});
 
 body.addEventListener('click', (e) => {
   if (e.target.id === 'addProvider') {
