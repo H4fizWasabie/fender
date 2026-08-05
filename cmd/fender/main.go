@@ -211,6 +211,32 @@ default_model = "openai/gpt-4o-mini"
 		}
 		fmt.Fprintln(out, "wrote fender.toml (edit api_key)")
 	}
+	if err := initIntel(out); err != nil {
+		return err
+	}
 	fmt.Fprintln(out, "workspace ready (.fender/)")
+	return nil
+}
+
+// initIntel builds the code index + MAP.md once at setup (D45).
+func initIntel(out io.Writer) error {
+	s, err := codeintel.Open(".")
+	if err != nil {
+		return err
+	}
+	n, err := s.Refresh()
+	if err != nil {
+		return err
+	}
+	g, err := s.Rebuild()
+	if err != nil {
+		return err
+	}
+	body := g.GenerateMap()
+	mapPath := filepath.Join(".fender", "memory", "MAP.md")
+	if err := os.WriteFile(mapPath, []byte(body), 0600); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "indexed %d file(s), wrote %s\n", n, mapPath)
 	return nil
 }

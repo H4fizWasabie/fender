@@ -60,6 +60,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D44 | **Response caching revisit (D35 condition met) — stays deferred.** Real data: free model = $0 cost, stale-cache risk on the exact path that already broke (empty-role 400, protocol nags). Revisit only if paid reasoning models + profiled repeated identical calls. |
 
+| D45 | **Code-intel is automatic (ticket 14b).** buildAgent opens the codeintel store and runs one incremental refresh at every session build (stamp walk — cheap; the loop itself stays refresh-free per spec decision 8); the search tool is always symbol-aware (no fallback to the dumb walker); `intel_refresh` tool lets the agent re-index when it senses drift (spec decision 8, now delivered); `fender init` builds the index + MAP.md once. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

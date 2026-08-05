@@ -1,8 +1,12 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/H4fizWasabie/fender/internal/codeintel"
 )
 
 func TestBuildAgentWithConfig(t *testing.T) {
@@ -33,5 +37,26 @@ default_model = "m1"
 func TestBuildAgentMissingConfig(t *testing.T) {
 	if _, err := buildAgent(filepath.Join(t.TempDir(), "absent.toml"), nil, nil); err == nil {
 		t.Fatal("expected error for missing config")
+	}
+}
+
+func TestIntelRefreshTool(t *testing.T) {
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+	os.WriteFile("main.go", []byte("package main\nfunc Fresh() {}\n"), 0600)
+
+	store, err := codeintel.Open(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tool := intelRefreshTool(store)
+	out, err := tool.Call(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "refreshed") {
+		t.Fatalf("output = %q", out)
 	}
 }

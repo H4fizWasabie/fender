@@ -251,3 +251,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Dashboard rendering: deltas accumulate into one element per stream (was one div per SSE chunk = word-per-line); thinking whitespace collapsed; show-thinking toggle
+
+### Added
+- Code-intel is automatic (D45): session-build incremental refresh, always-symbol-aware search, agent-callable intel_refresh tool, fender init builds index + MAP.md

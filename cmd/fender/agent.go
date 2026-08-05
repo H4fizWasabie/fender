@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/codeintel"
-	"github.com/H4fizWasabie/fender/internal/context"
+	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -86,7 +87,7 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 	a.System = defaultSystem
 	a.Mem = memory.New(".")
 	a.Skills = regSkills
-	a.Ctx = context.New()
+	a.Ctx = ctxpkg.New()
 	a.Resolver = func(name string) (agent.LLM, error) {
 		c, ok := reg.Client(name)
 		if !ok {
@@ -95,4 +96,24 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 		return c, nil
 	}
 	return a, nil
+}
+
+// intelRefreshTool lets the agent refresh the code index when it senses
+// drift (codeintel spec decision 8, delivered D45).
+func intelRefreshTool(store *codeintel.Store) tools.Tool {
+	return tools.Tool{
+		Name:        "intel_refresh",
+		Description: "Refresh the code-intelligence index (re-extract changed files, rebuild the symbol graph). Call when you suspect the index is stale or before searching for symbols.",
+		Parameters:  map[string]any{"type": "object", "properties": map[string]any{}},
+		Call: func(ctx context.Context, args map[string]any) (string, error) {
+			n, err := store.Refresh()
+			if err != nil {
+				return "", err
+			}
+			if _, err := store.Rebuild(); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("index refreshed (%d file(s) re-extracted)", n), nil
+		},
+	}
 }
