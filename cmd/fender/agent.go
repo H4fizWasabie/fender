@@ -34,20 +34,22 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 	if err != nil {
 		return nil, err
 	}
-	llm, ok := reg.Default()
+	primary, ok := reg.Default()
 	if !ok {
 		return nil, fmt.Errorf("no provider with default_model set (see fender.toml)")
 	}
+	llm, err := reg.WithFallback(primary)
+	if err != nil {
+		return nil, err
+	}
 
 	mode := guardrail.Balanced
-	subagentProvider := ""
 	if cfgPath != "" {
 		var cfg provider.Config
 		if _, err := toml.DecodeFile(cfgPath, &cfg); err == nil {
 			if cfg.Mode != "" {
 				mode = guardrail.Mode(cfg.Mode)
 			}
-			subagentProvider = cfg.Subagent // D48: default subagent provider
 		}
 	}
 	if modeOverride != nil {
@@ -90,17 +92,9 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 
 	a := agent.NewAgent(llm, regTools)
 	a.System = defaultSystem
-	a.DefaultSubagent = subagentProvider
 	a.Mem = mem
 	a.Skills = regSkills
 	a.Ctx = ctxpkg.New()
-	a.Resolver = func(name string) (agent.LLM, error) {
-		c, ok := reg.Client(name)
-		if !ok {
-			return nil, fmt.Errorf("unknown provider %q", name)
-		}
-		return c, nil
-	}
 	return a, nil
 }
 

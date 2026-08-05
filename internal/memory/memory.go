@@ -36,6 +36,16 @@ func New(root string) *Memory {
 	return &Memory{root: root}
 }
 
+// Child returns a distinct memory handle for an ephemeral child agent. Both
+// handles read the same canonical project memory; child conversation and
+// artifacts live outside Memory and remain isolated by Agent and context.
+func (m *Memory) Child() *Memory {
+	if m == nil {
+		return nil
+	}
+	return &Memory{root: m.root}
+}
+
 // Ensure creates the .fender/ workspace if missing. Idempotent: never
 // overwrites existing files (user edits survive).
 func (m *Memory) Ensure() error {

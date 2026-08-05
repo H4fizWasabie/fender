@@ -64,7 +64,10 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) e
 	for {
 		model := "?"
 		if state.agent != nil {
-			if c, ok := state.agent.LLM.(*provider.Client); ok {
+			if c, ok := state.agent.LLM.(interface {
+				Name() string
+				Model() string
+			}); ok {
 				model = c.Name() + "/" + c.Model()
 			}
 		}
@@ -185,7 +188,11 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 		if st.agent == nil {
 			return false, fmt.Errorf("no agent built yet")
 		}
-		st.agent.LLM = c
+		configured, err := reg.WithFallback(c)
+		if err != nil {
+			return false, err
+		}
+		st.agent.LLM = configured
 		fmt.Fprintf(out, "model -> %s\n", parts[1])
 		return false, nil
 	case "/mode":
@@ -210,7 +217,7 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 		if level != "off" && level != "low" && level != "medium" && level != "high" {
 			return false, fmt.Errorf("invalid level %q (off|low|medium|high)", level)
 		}
-		c, ok := st.agent.LLM.(*provider.Client)
+		c, ok := st.agent.LLM.(interface{ SetThinking(string) error })
 		if !ok {
 			return false, fmt.Errorf("current LLM has no thinking control")
 		}
@@ -243,8 +250,8 @@ func validMode(m guardrail.Mode) bool {
 }
 
 // renderEvent draws one observer event (ticket-08 renderer seam). Thinking
-// deltas render dimmed only when showThinking is set (D40). Subagent events
-// (D48) carry a source prefix so main vs subagent output is distinct.
+// deltas render dimmed only when showThinking is set (D40). Ephemeral child
+// events carry a source prefix so child work remains observable (D50).
 func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
 	prefix := ""
 	if e.Source != "" {
@@ -265,7 +272,7 @@ func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
 		fmt.Fprintf(out, "\n  %s[tool %s: %s]\n", prefix, e.Text, status)
 	case "done":
 		if e.Source != "" {
-			return // subagent completion is reported via the delegate tool result
+			return // child completion is reported via the delegate tool result
 		}
 		color := ""
 		switch e.Status {

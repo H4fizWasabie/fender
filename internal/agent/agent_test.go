@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
@@ -387,37 +386,24 @@ func TestRunCompactsLargeUserInput(t *testing.T) {
 	}
 }
 
-// Parallel dispatch (D48): three independent shell calls in one turn run
-// concurrently — total wall time must be ~1x the slowest, not 3x.
-func TestParallelToolDispatch(t *testing.T) {
-	// shell sleeps are guarded — use a parallel-friendly fake tool instead:
-	// register a custom tool that sleeps and records concurrency.
+func TestToolCallsExecuteSequentiallyInModelOrder(t *testing.T) {
 	proj := t.TempDir()
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
-	var mu sync.Mutex
-	active, maxActive := 0, 0
+	var order []string
 	reg.Add(tools.Tool{
-		Name: "slow_probe", Parameters: map[string]any{"type": "object"},
+		Name: "record", Parameters: map[string]any{"type": "object"},
 		Call: func(ctx context.Context, args map[string]any) (string, error) {
-			mu.Lock()
-			active++
-			if active > maxActive {
-				maxActive = active
-			}
-			mu.Unlock()
-			time.Sleep(150 * time.Millisecond)
-			mu.Lock()
-			active--
-			mu.Unlock()
-			return "probed", nil
+			id, _ := args["id"].(string)
+			order = append(order, id)
+			return id, nil
 		},
 	})
 	multi := &provider.Response{Choices: []provider.Choice{{Message: provider.Message{
 		Role: "assistant",
 		ToolCalls: []provider.ToolCall{
-			{ID: "c1", Type: "function", Function: provider.ToolFunction{Name: "slow_probe", Arguments: `{}`}},
-			{ID: "c2", Type: "function", Function: provider.ToolFunction{Name: "slow_probe", Arguments: `{}`}},
-			{ID: "c3", Type: "function", Function: provider.ToolFunction{Name: "slow_probe", Arguments: `{}`}},
+			{ID: "c1", Type: "function", Function: provider.ToolFunction{Name: "record", Arguments: `{"id":"a"}`}},
+			{ID: "c2", Type: "function", Function: provider.ToolFunction{Name: "record", Arguments: `{"id":"b"}`}},
+			{ID: "c3", Type: "function", Function: provider.ToolFunction{Name: "record", Arguments: `{"id":"c"}`}},
 		},
 	}}}}
 	fake := &fakeLLM{steps: []*provider.Response{
@@ -425,16 +411,11 @@ func TestParallelToolDispatch(t *testing.T) {
 		completeReply("complete", "done"),
 	}}
 	a := NewAgent(fake, reg)
-	start := time.Now()
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "probe thrice"}})
-	elapsed := time.Since(start)
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	if maxActive < 2 {
-		t.Fatalf("no concurrency observed: maxActive = %d", maxActive)
-	}
-	if elapsed > 500*time.Millisecond {
-		t.Fatalf("sequential execution suspected: %.0fms (3x150ms parallel ≈ 150ms)", float64(elapsed.Milliseconds()))
+	if got := strings.Join(order, ""); got != "abc" {
+		t.Fatalf("execution order = %q", got)
 	}
 }

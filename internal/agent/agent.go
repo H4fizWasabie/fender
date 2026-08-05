@@ -1,12 +1,11 @@
 // Package agent implements D13: ONE loop. Agent{LLM, Tools} runs the
 // canonical loop (prompt -> LLM -> tool call -> execute -> result -> repeat).
-// Subagents are the same type in a goroutine (delegate tool, Task 7).
+// A child agent is the same type with fresh ephemeral state (delegate tool).
 package agent
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
@@ -29,7 +28,7 @@ type Event struct {
 	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "done"
 	Text   string `json:"text"`             // delta text / tool description / final reply
 	Status string `json:"status"`           // tool status ("ok"|"error"|"cached") or result status
-	Source string `json:"source,omitempty"` // "" = main agent; "subagent:<provider>" (D48)
+	Source string `json:"source,omitempty"` // "" = main agent; "child" = ephemeral child (D50)
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
@@ -45,27 +44,23 @@ const (
 )
 
 // Agent is one loop: model + tools + discipline. The same type runs the
-// parent and every subagent (D13).
+// main agent and every ephemeral child (D13, D50).
 type Agent struct {
-	Name            string // "main" (default) or "subagent:<provider>" (D48)
-	DefaultSubagent string // provider used when delegate omits "provider" (config `subagent =`)
-	LLM             LLM
-	Resolver        Resolver // subagent provider selection (D7); nil -> inherit parent LLM
-	System          string
-	MaxIter         int              // 0 -> defaultMaxIter
-	MaxSubIter      int              // 0 -> defaultMaxSubIter
-	Ctx             *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
-	Observer        func(Event)      // renderer seam (ticket 08); nil-safe
-	Mem             *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
-	Skills          *skills.Registry // D27 skills; nil = ticket-05 behavior
-	registry        *tools.Registry
+	LLM        LLM
+	System     string
+	MaxIter    int              // 0 -> defaultMaxIter
+	MaxSubIter int              // 0 -> defaultMaxSubIter
+	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
+	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
+	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
+	registry   *tools.Registry
 }
 
 // NewAgent wires llm to reg and registers the delegate tool (D13).
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
 	a := &Agent{LLM: llm, registry: reg}
 	a.registry.Add(a.delegateTool())
-	a.registry.Add(a.askTool()) // D49: one-shot other-key call — the call IS the subagent
 	a.registry.Add(a.loadSkillTool())
 	return a
 }
@@ -161,19 +156,11 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			continue
 		}
 
-		// Act: execute each tool call; observe: feed results back.
-		// Parallel dispatch (D48): independent calls in one turn run
-		// concurrently (N goroutines, join) — subagents especially benefit.
+		// Act: execute tool calls in model order; observe: feed results back.
+		// Sequential execution is deliberate (D50): edits, shell commands, and
+		// delegated work must not race without an explicit future decision.
 		progress := false
 		var executedKey string
-		type pending struct {
-			tc     provider.ToolCall
-			key    string
-			cached bool
-			out    string
-			err    error
-		}
-		var pendings []pending
 		for _, tc := range msg.ToolCalls {
 			if tc.Function.Name == completionToolName {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: completionError})
@@ -181,51 +168,29 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			}
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
 			if out, ok := dedup[key]; ok {
-				pendings = append(pendings, pending{tc: tc, key: key, cached: true, out: out})
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
 				executedKey = key // repeat detection: cached calls are not progress
-				continue
-			}
-			pendings = append(pendings, pending{tc: tc, key: key})
-		}
-		// launch unique calls concurrently (D48), join, collect in order
-		var wg sync.WaitGroup
-		for i := range pendings {
-			p := &pendings[i]
-			if p.cached {
-				continue
-			}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				out, err := a.registry.Execute(ctx, p.tc.Function.Name, p.tc.Function.Arguments)
-				if err == nil && a.Ctx != nil {
-					out = a.Ctx.CompactOutput(p.tc.Function.Name, out)
-				}
-				p.out, p.err = out, err
-			}()
-		}
-		wg.Wait()
-		for _, p := range pendings {
-			tc := p.tc
-			if p.cached {
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + p.out})
 				if a.Observer != nil {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached"})
 				}
 				continue
 			}
-			if p.err != nil {
+			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
+			if err != nil {
 				errors++
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + p.err.Error()})
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				if a.Observer != nil {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error"})
 				}
 				continue
 			}
-			dedup[p.key] = p.out
-			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: p.out})
+			if a.Ctx != nil {
+				out = a.Ctx.CompactOutput(tc.Function.Name, out)
+			}
+			dedup[key] = out
+			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})
 			progress = true
-			executedKey = p.key
+			executedKey = key
 			if a.Observer != nil {
 				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok"})
 			}

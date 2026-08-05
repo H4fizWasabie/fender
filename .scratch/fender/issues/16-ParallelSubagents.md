@@ -10,4 +10,6 @@ D8 parallel subagent dispatch + main-vs-subagent identity + subagent provider co
 
 ## Answer
 
-D48 delivered + **live-verified cross-key**: parent on zen (account 1) → two PARALLEL delegate subagents on zen-2 (account 2's key, via config `subagent = "zen-2"`) → both returned (SUB-A, SUB-B) → parent completed. Parallel tool dispatch (goroutines + WaitGroup, ordered results, dedup pre-checked), context.Manager thread-safe (2 deadlock bugs fixed: record re-lock, Child copylocks — race-clean), identity (Event.Source, Agent.Name, magenta [subagent:<provider>] tags in REPL + dashboard, subagent done suppressed), config `subagent =` default provider. Note: free deepseek occasionally emits malformed multi-tool responses (transient delegate errors — harness recovers via D36); runs take 60-90s (free tier latency).
+D48 was delivered and live-verified as recorded below, then **superseded by D50**. Fender now executes tools sequentially and uses one synchronous ephemeral child on the main agent's provider fallback chain. This ticket remains historical evidence, not current architecture.
+
+Historical result: parent on zen (account 1) → two parallel delegate subagents on zen-2 (account 2's key, via config `subagent = "zen-2"`) → both returned (SUB-A, SUB-B) → parent completed. Parallel tool dispatch used goroutines + WaitGroup with ordered results and pre-checked dedup; context.Manager was made thread-safe and remains so.

@@ -18,8 +18,8 @@ type Tool struct {
 	Call        func(ctx context.Context, args map[string]any) (string, error)
 }
 
-// Registry holds the tools of one agent. Subagents get a Registry too
-// (minus delegate), so guardrails wrap tool execution once (D13).
+// Registry holds the tools of one agent. Ephemeral children get a Registry
+// too (minus delegate), so guardrails wrap tool execution once (D13/D50).
 type Registry struct {
 	tools map[string]Tool
 	order []string

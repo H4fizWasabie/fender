@@ -1,6 +1,6 @@
 # Fender
 
-A from-scratch Go coding agent — one loop, subagents as a tool, guardrailed shell, native skills, and code intelligence built in. Terminal REPL, autonomous mode, and a localhost web dashboard — all in a single binary.
+A from-scratch Go coding agent — one persistent main agent, ephemeral child delegation, backup-key fallback, guardrailed shell, native skills, and built-in code intelligence. Terminal REPL, autonomous mode, and a localhost web dashboard — all in a single binary.
 
 > Design DNA: **the harness is the guardrail.** The LLM gets full freedom; safety lives in deterministic code.
 
@@ -19,23 +19,31 @@ fender dashboard           # web GUI at http://127.0.0.1:8787
 
 ```toml
 mode = "balanced" # strict | balanced | yolo
+fallback = "zen-backup" # optional second provider/key for failed model requests
 
 [providers.zen]
 base_url = "https://opencode.ai/zen"
-api_key = "sk-..."
+api_key = "sk-primary-..."
 models = ["deepseek-v4-flash-free"]
 default_model = "deepseek-v4-flash-free"
 
 [providers.zen.model_configs.deepseek-v4-flash-free]
 thinking = true
 thinking_levels = { low = "low", medium = "medium", high = "high" }
+
+[providers.zen-backup]
+base_url = "https://opencode.ai/zen"
+api_key = "sk-backup-..."
+models = ["deepseek-v4-flash-free"]
+default_model = "deepseek-v4-flash-free"
 ```
 
 Any OpenAI-compatible endpoint works (OpenRouter, Ollama, LM Studio, vLLM). Anthropic-native via `api = "anthropic"`.
 
 ## What it does
 
-- **One loop, everything is an agent** (D13) — parent and subagents are the same type; subagent spawning is just a tool; subagents can pick different providers
+- **One main agent, ephemeral children** (D13, D50) — `delegate` runs the same Agent type synchronously with fresh working state, no grandchildren, and no child session
+- **Provider fallback, not a backup agent** (D50) — a failed model request can retry once through a separately configured provider/API key; partial streams never retry
 - **Adaptive OODA** (D36) — flat loop by default, one explicit orientation turn on thrash detection
 - **Guardrail in code, not prompts** (D21–24) — `mvdan.cc/sh` AST verdicts (RUN/ASK/REFUSE), strict/balanced/yolo modes, REFUSE is hard in all modes, command timeouts, audit log
 - **Context = artifact engineering** (D31) — >8K output becomes pointers, HEAD/TAIL input preview, read_file never compacted, session isolation, 24h sweep
@@ -62,7 +70,8 @@ REPL slash commands: `/quit` `/model <provider>` `/mode <strict|balanced|yolo>` 
 
 ## Design docs
 
-- `DECISIONS.md` — the full decision log (D1–D45)
+- `DECISIONS.md` — the full decision log (D1–D50)
+- `CONTEXT.md` — canonical agent, child, memory, and fallback terminology
 - `docs/superpowers/specs/` — one spec per subsystem
 - `docs/superpowers/plans/` — implementation plans
 - `.scratch/fender/map.md` — the wayfinder map (all tickets + backlog)

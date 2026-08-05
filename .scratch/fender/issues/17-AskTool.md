@@ -10,4 +10,6 @@ D49: one-agent model — "subagent" = one API call to another key (ask tool). No
 
 ## Answer
 
-D49 delivered. ask tool: one-shot Chat call to a resolver-selected provider (its own key), no tools/memory/loop, reply as tool result. Tests: one-shot (exactly 1 call, no tools, single user message), default provider, empty prompt. Live: parent zen (acct 1) → 2 parallel asks zen-2 (acct 2) → OPINION-A OPINION-B. delegate retained for nested research subtasks.
+D49 was delivered and live-verified, then **superseded by D50**. The `ask` tool is removed. A second key is now configured only as provider fallback, while `delegate` remains the single child-agent mechanism. This ticket remains historical evidence, not current architecture.
+
+Historical result: one-shot Chat call to a resolver-selected provider with no tools/memory/loop; parent zen (account 1) → two parallel asks to zen-2 (account 2) → OPINION-A and OPINION-B.

@@ -5,7 +5,16 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ## [Unreleased]
 
 ### Changed
+- Agent model reconciled (D50): exactly one persistent main agent; `delegate` now runs one synchronous ephemeral child on the same provider fallback chain with fresh conversation, artifact context, and memory handle; child delegation and child session persistence are unavailable by construction.
+- Tool calls execute sequentially in model order again; broad D48 parallel dispatch is superseded until measured evidence justifies a new decision.
+- Governing docs and terminology now distinguish main agent, child agent, project memory, working state, and provider fallback.
 - gofmt: reformatted 6 files that had drifted (internal/agent/agent.go, internal/agent/delegate.go, internal/codeintel/store_test.go, internal/guardrail/verdict.go, internal/provider/client.go, internal/provider/config.go)
+
+### Added
+- Provider fallback (D50): optional top-level `fallback = "provider-name"` retries a failed model request through a separately configured provider/API key; streaming retries only before output begins.
+
+### Removed
+- One-shot `ask` model calls, provider-selectable child agents, and provider-based child identity (D47–D49 superseded by D50).
 
 ### Fixed
 - `fender run --config X` now honors the config file instead of falling back to ~/.fender/fender.toml (runTask threads configPath through to buildAgent); TestRunCommand pinned to a throwaway config so it never calls a real provider

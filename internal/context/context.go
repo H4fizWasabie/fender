@@ -40,8 +40,8 @@ type Artifact struct {
 
 // Manager is the artifact layer for one agent run. Per-agent instances
 // (D38): a child agent gets its own Manager via Child() — no shared mutable
-// state across goroutines. Internally mutex-guarded: parallel tool
-// execution (D48) calls CompactOutput/record concurrently.
+// state across goroutines. Internally mutex-guarded so future callers can
+// safely observe and compact without coupling the manager to one loop.
 type Manager struct {
 	Root            string // artifact root (default /tmp/fender/artifacts/<runID>)
 	ContextChars    int    // 0 -> DefaultChars
