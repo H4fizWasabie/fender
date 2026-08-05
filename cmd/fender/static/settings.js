@@ -25,6 +25,10 @@ function providerRow(p) {
         <input class="p-base" value="${p.base_url || ''}" placeholder="https://opencode.ai/zen">
       </div>
       <div class="setting-row">
+        <label>API path <span class="muted">(default /v1; OpenRouter needs /api/v1)</span></label>
+        <input class="p-path" value="${p.path || ''}" placeholder="/v1">
+      </div>
+      <div class="setting-row">
         <label>API key <span class="muted">${p.api_key ? 'current: ' + p.api_key : ''}</span></label>
         <input class="p-key" type="password" placeholder="${p.key_hint ? 'blank = keep existing key' : 'sk-…'}">
       </div>
@@ -79,7 +83,7 @@ body.addEventListener('click', (e) => {
     const div = document.createElement('div');
     div.className = 'setting-provider';
     div.dataset.name = '';
-    div.innerHTML = providerRow({ name: '', base_url: '', api_key: '', key_hint: '', models: [], default_model: '', thinking: false });
+    div.innerHTML = providerRow({ name: '', base_url: '', path: '', api_key: '', key_hint: '', models: [], default_model: '', thinking: false });
     document.getElementById('providerList').appendChild(div);
   }
   if (e.target.classList.contains('p-remove')) {
@@ -93,6 +97,7 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
   const list = [...document.querySelectorAll('.setting-provider')].map((el) => ({
     name: el.querySelector('.p-name').value.trim(),
     base_url: el.querySelector('.p-base').value.trim(),
+    path: el.querySelector('.p-path').value.trim(),
     api_key: el.querySelector('.p-key').value,
     key_hint: '',
     models: el.querySelector('.p-models').value.split(',').map((s) => s.trim()).filter(Boolean),

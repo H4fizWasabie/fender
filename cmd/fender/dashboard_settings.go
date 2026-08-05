@@ -25,6 +25,7 @@ type settingsView struct {
 type settingsProvider struct {
 	Name         string   `json:"name"`
 	BaseURL      string   `json:"base_url"`
+	Path         string   `json:"path"` // API path prefix (default "/v1"; OpenRouter "/api/v1")
 	APIKey       string   `json:"api_key"`   // masked in GET; "" = keep on POST
 	KeyHint      string   `json:"key_hint"`  // last 4 chars, for display
 	Models       []string `json:"models"`
@@ -64,7 +65,7 @@ func (d *dashState) getSettings(w http.ResponseWriter, r *http.Request) {
 	view := settingsView{Mode: cfg.Mode, Fallback: cfg.Fallback}
 	for name, p := range cfg.Providers {
 		view.Providers = append(view.Providers, settingsProvider{
-			Name: name, BaseURL: p.BaseURL,
+			Name: name, BaseURL: p.BaseURL, Path: p.Path,
 			APIKey:       maskKey(p.APIKey),
 			KeyHint:      keyHint(p.APIKey),
 			Models:       p.Models,
@@ -100,6 +101,7 @@ func (d *dashState) postSettings(w http.ResponseWriter, r *http.Request) {
 		}
 		p := provider.Provider{
 			BaseURL: sp.BaseURL, APIKey: key,
+			Path: sp.Path, // preserved — dropping it re-breaks /api/v1 providers (openrouter)
 			Models: sp.Models, DefaultModel: sp.DefaultModel,
 		}
 		if sp.Thinking && sp.DefaultModel != "" {

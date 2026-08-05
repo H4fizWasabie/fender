@@ -313,3 +313,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Pre-push hook: blocks commits containing API-key patterns (sk-or-v1-, long sk- keys) + optional ~/.fender/blocked-keys.txt blocklist; GitHub secret scanning + push protection enabled
+
+### Fixed
+- Settings save preserves provider path (dropping it re-broke /api/v1 providers like OpenRouter); path field shown in the settings form
