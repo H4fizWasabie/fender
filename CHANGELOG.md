@@ -4,10 +4,29 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ## [Unreleased]
 
+### Added
+- Centered Docket browser workbench (D51): new-session-first task surface, explicit resumable session index, live activity/evidence slips, responsive layout, accessible states, and truthful completion handoff.
+- Dashboard state/session/approval APIs so one browser session keeps a stable ID, old sessions can be resumed explicitly, and strict/balanced shell holds can be approved or denied from the workbench.
+- `PRODUCT.md` plus Impeccable surface brief, approved comp, prompts, and design evidence for the redesigned workbench.
+- Marketing visual archive under `docs/marketing/fender-workbench/`, preserving all direction sketches, composition studies, and desktop/mobile render passes with truth-safe usage notes.
+
 ### Changed
+- Dashboard runtime and browser code are split into focused state, session, approval, event, HTTP, docket, evidence, and drawer modules; config selection now has one provider-owned path resolver.
+- Fallback thinking incompatibility is now an explicit warning instead of a discarded library error; governing D51 status is synchronized across the decision log and assembled spec.
+- Fender now opens a fresh session by default in both browser and terminal; CLI resumption is explicit through `--resume <id|latest>` (D51 supersedes D41's auto-resume default).
+- Agent model reconciled (D50): exactly one persistent main agent; `delegate` now runs one synchronous ephemeral child on the same provider fallback chain with fresh conversation, artifact context, and memory handle; child delegation and child session persistence are unavailable by construction.
+- Tool calls execute sequentially in model order again; broad D48 parallel dispatch is superseded until measured evidence justifies a new decision.
+- Governing docs and terminology now distinguish main agent, child agent, project memory, working state, and provider fallback.
 - gofmt: reformatted 6 files that had drifted (internal/agent/agent.go, internal/agent/delegate.go, internal/codeintel/store_test.go, internal/guardrail/verdict.go, internal/provider/client.go, internal/provider/config.go)
 
+### Added
+- Provider fallback (D50): optional top-level `fallback = "provider-name"` retries a failed model request through a separately configured provider/API key; streaming retries only before output begins.
+
+### Removed
+- One-shot `ask` model calls, provider-selectable child agents, and provider-based child identity (D47–D49 superseded by D50).
+
 ### Fixed
+- Centered Docket reload/resume now reconstructs completion only for explicit terminal states, atomically couples durable completion evidence to terminal session persistence, labels abandoned `working` sessions as editable interruptions, persists real tool/approval/completion evidence, exposes bounded tool-result previews behind disclosure, and reports session-write failures instead of silently claiming resumability.
 - `fender run --config X` now honors the config file instead of falling back to ~/.fender/fender.toml (runTask threads configPath through to buildAgent); TestRunCommand pinned to a throwaway config so it never calls a real provider
 
 ### Added

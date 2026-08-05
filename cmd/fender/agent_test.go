@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/H4fizWasabie/fender/internal/codeintel"
+	"github.com/H4fizWasabie/fender/internal/provider"
 )
 
 func TestBuildAgentWithConfig(t *testing.T) {
@@ -31,6 +32,32 @@ default_model = "m1"
 	}
 	if a.Mem == nil || a.Skills == nil || a.Ctx == nil {
 		t.Fatal("wiring incomplete: Mem/Skills/Ctx must be set")
+	}
+}
+
+func TestBuildAgentWithFallback(t *testing.T) {
+	cfg := writeConfig(t, `
+mode = "balanced"
+fallback = "backup"
+
+[providers.primary]
+base_url = "http://localhost:1/v1"
+api_key = "primary-key"
+models = ["m1"]
+default_model = "m1"
+
+[providers.backup]
+base_url = "http://localhost:2/v1"
+api_key = "backup-key"
+models = ["m1"]
+default_model = "m1"
+`)
+	a, err := buildAgent(cfg, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := a.LLM.(*provider.FallbackClient); !ok {
+		t.Fatalf("LLM = %T, want fallback chain", a.LLM)
 	}
 }
 

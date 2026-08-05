@@ -1,9 +1,9 @@
 # Fender — Design Spec
 
-**Date:** 2026-08-04
-**Status:** Approved in discussion session. Implementation not started (decision log: `DECISIONS.md`).
+**Date:** 2026-08-04; reconciled 2026-08-05 through D51
+**Status:** Implemented through D51.
 
-Fender is a custom coding agent harness, built from scratch in Go, terminal CLI first with a desktop GUI later, open-sourced. Built for control + learning; the engineering methodology is Matt Pocock's skills + ponytail, native from day one.
+Fender is an open-source coding agent harness built from scratch in Go. It ships a terminal CLI and localhost browser dashboard in one binary. It exists for control + learning; the engineering methodology is Matt Pocock's skills + ponytail, native from day one.
 
 ---
 
@@ -11,16 +11,14 @@ Fender is a custom coding agent harness, built from scratch in Go, terminal CLI 
 
 - **The harness is the guardrail.** The LLM gets full freedom; safety lives in deterministic code (shell parsing, verdicts, timeouts), never in prompt instructions or the model's mood.
 - **Full trust by default, configurable caution.** Default shipped mode is *balanced*; the author runs *yolo*.
-- **One loop, everything is an agent.** Parent and subagents are the same `Agent` type; subagent spawning is just another tool.
+- **One persistent actor.** The main agent owns the session and outcome. Delegation creates a synchronous, ephemeral child from the same `Agent` type; provider fallback is resilience, not another agent.
 - **Prevention over compression.** Context is layered and loaded selectively (ICM); nothing enters context that isn't needed.
 
-## 2. Non-goals (v1) — seams reserved, not built
+## 2. Non-goals — seams reserved, not built
 
-- Conversation/tool-loop context methodology (D15) — thin interface now
-- Session persistence (D9)
-- Anthropic-native adapter (D6) — OpenAI-compatible only in v1
-- Desktop GUI (D2) — CLI first, UI stays a thin skin
-- TUI polish (D26) — plain streaming transcript
+- Planner, reflection phase, swarm, agent graph, or parallel tool dispatcher (D13, D50)
+- TUI (D26) — the terminal remains a plain streaming transcript
+- Response caching (D35, D44)
 
 ## 3. Architecture
 
@@ -28,26 +26,30 @@ Fender is a custom coding agent harness, built from scratch in Go, terminal CLI 
 fender/
 ├── cmd/fender/           # fender (interactive) · fender run "task" (autonomous) · fender init · fender skill install
 ├── internal/
-│   ├── agent/            # D13: ONE loop — Agent{Context, Model, Tools}; subagent = same type, own goroutine + provider
-│   ├── provider/         # D6/D7: OpenAI-compatible client + provider registry from TOML
+│   ├── agent/            # D13/D50: ONE main loop; synchronous ephemeral child via delegate
+│   ├── provider/         # shared provider shape + backup-key fallback + TOML registry
 │   ├── tools/            # D10: read, edit, shell, search — seam for graphify/cce/codegraph as search backends
 │   ├── guardrail/        # D21-24: strict/balanced/yolo modes; sh-parser verdicts (RUN/ASK/REFUSE); timeouts; audit log
 │   ├── skills/           # D27-30: registry + trigger matching + loader (go:embed 23 skills; install external)
 │   ├── memory/           # D14/17/28: ICM layers — PROJECT.md always; MAP.md/reference/skills loaded selectively
 │   ├── codeintel/        # D16/19/20: tree-sitter extraction → graph build → cluster → query API
-│   ├── context/          # D15: conversation-loop methodology — DEFERRED, thin interface now
-│   └── ui/               # D26: plain streaming renderer
+│   ├── context/          # D31/D38: artifact engineering and isolated child contexts
+│   └── ui/               # terminal renderer + embedded localhost dashboard
 ├── .fender/              # per-project memory workspace: PROJECT.md, MAP.md, reference/, working/, skills/
 └── fender.toml           # providers + permission mode + tool settings
 ```
 
-### 3.1 Agent loop (D13)
+### 3.1 Agent loop and child lifecycle (D13, D50)
 
-One `Agent` type: `Context + Model + Tools`, running the canonical loop (prompt → LLM → tool call → execute → result → repeat). Subagent-as-a-tool: the harness spawns a child `Agent` in a goroutine with its own provider/model from the config, runs the *same* loop, returns the result as a tool result to the parent. Parallel subagents = N goroutines + join. Guardrails wrap tool execution once — every agent passes through.
+One `Agent` type runs the canonical loop (prompt → LLM → tool call → execute → result → repeat). Exactly one persistent main agent owns the session and final outcome. `delegate` is a synchronous tool call that creates one ephemeral child running the same loop on a self-contained task. The child receives fresh messages, artifact context, and memory handle; bootstraps from the same canonical project memory; uses the same provider fallback chain and guardrailed tool registry minus `delegate`; returns one result; and is discarded without a session or consolidation. It cannot create grandchildren.
 
-### 3.2 Provider layer (D6, D7, D25)
+Tool calls execute sequentially in model order. There is no general parallel dispatcher. The removed `ask` one-shot model call is not a second form of child.
 
-OpenAI-compatible API only (covers OpenRouter, Ollama, LM Studio, vLLM, local servers). Provider registry in `fender.toml` — per-provider key, base URL, model list. Subagents are told which provider/model to use. Interface stays clean for an Anthropic adapter later.
+### 3.2 Provider layer and fallback (D6, D25, D42, D50)
+
+The agent consumes one OpenAI-shaped internal request/response surface. OpenAI-compatible endpoints cover OpenRouter, Ollama, LM Studio, and vLLM; the shipped Anthropic adapter translates Messages API traffic to the same shape.
+
+Each provider entry in `fender.toml` owns its key, base URL, models, and default model. Optional top-level `fallback = "provider-name"` references a second provider entry, normally the same service/model with a backup API key. A failed non-streaming model request retries once against that entry. A streaming request retries only if the primary failed before emitting text or thinking; cancellations and partial streams never retry. The main and child agents use the same chain. Fallback never creates an agent or changes delegation identity.
 
 ### 3.3 Tools (D10)
 
@@ -84,7 +86,7 @@ ICM is the memory architecture — layered files that record what's in the codeb
     reference/          # Layer 2 — selectively loaded per topic.
     skills/             # Layer 3 — skill bodies, loaded on trigger.
     working/            # Layer 4 — session artifacts, scratch notes.
-    sessions/           # (future) — seam for session persistence (D9).
+  sessions/             # persisted session history (D41)
 ```
 
 Memory lives inside the project (portable, diffable). The harness controls loading order — prevention over compression.
@@ -113,13 +115,27 @@ Plus: turns-truncation with compaction markers, `ContextFor` budget arithmetic, 
 
 **Token-caching stack (5 layers):** provider prompt caching · tool dedup within turn · input preview/artifact pointer · turns truncation + markers · background consolidation via small model.
 
-### 3.9 UI (D26)
+### 3.9 UI (D2, D26)
 
-Plain streaming transcript: minimal ANSI color, visible tool-call lines, readable approval prompts, slash commands (`/model`, `/mode`, `/tool`, `/quit`). Renderer stays a thin skin — GUI replaces it later (D2).
+The terminal remains a plain streaming transcript with minimal ANSI color, visible tool-call lines, readable approval prompts, and slash commands. It opens a fresh session by default; `--resume <id|latest>` restores an earlier session explicitly.
+
+The embedded localhost browser is the **Centered Docket** workbench (D51), an Operate surface rather than a source editor:
+
+- a compact left index contains New session, explicit Resume, repository, model, and permission context;
+- one central docket owns the task composer and chronological user/main-agent record;
+- an evidence lane is absent in a fresh session and attaches slips only for real observer events (tool, child, thinking, approval, error, completion);
+- tool results plus tool, approval, and completion events persist with the dashboard session; transient text and thinking streams remain live-only;
+- completion appears only when the HTTP snapshot marks an explicit terminal runtime status and carries the actual final reply, without inferring changed files, checks, or external proof;
+- a dashboard session owns one stable persisted ID across turns; new and resumed sessions rebuild clean agent state;
+- persistence failures surface through the HTTP state and request error instead of reporting an unsaved session as resumable;
+- strict/balanced shell ASK verdicts become a pending browser hold with explicit approve/deny controls;
+- responsive layouts preserve the same hierarchy by turning the session index into a drawer and placing evidence after the docket on narrow screens.
+
+The UI is plain embedded HTML/CSS/JS with no framework. Its durable visual language is warm technical stock, graphite rules, safety orange for action/attention, verification green only for proven completion, clipped sheets, flat matte surfaces, and progressive disclosure.
 
 ### 3.10 Config (D25)
 
-`fender.toml`, scaffolded by `fender init`. Providers (per-provider key/base URL/models), permission mode, tool settings.
+`fender.toml`, scaffolded by `fender init`. Providers (per-provider key/base URL/models), optional backup provider/key via `fallback`, permission mode, and tool settings.
 
 ## 4. Session walkthrough (validation)
 
@@ -136,8 +152,6 @@ Plain streaming transcript: minimal ANSI color, visible tool-call lines, readabl
 
 | Item | Decision | Seam |
 |------|----------|------|
-| Session persistence | D9 | `memory/sessions/` |
-| Anthropic adapter | D6 | provider interface |
-| Desktop GUI | D2 | `internal/ui` thin skin |
-| graphify/cce/codegraph as external search backends | D16 (internal from day one) | search tool backend seam |
 | TUI | D26 | renderer interface |
+| Response caching | D35/D44 | revisit only with paid-model measurements |
+| General parallel execution | D50 | requires a new measured decision |

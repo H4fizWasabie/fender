@@ -57,8 +57,79 @@ func TestLoadMissingFileErrors(t *testing.T) {
 	}
 }
 
+func TestLoadConfigUsesCanonicalSelection(t *testing.T) {
+	dir := t.TempDir()
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.WriteFile("fender.toml", []byte("mode = \"strict\"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadConfig("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Mode != "strict" {
+		t.Fatalf("mode = %q, want strict", cfg.Mode)
+	}
+}
+
 func TestLoadInvalidTOMLErrors(t *testing.T) {
 	if _, err := Load(writeConfig(t, "not toml [")); err == nil {
 		t.Fatal("expected error for invalid toml")
+	}
+}
+
+func TestWithFallback(t *testing.T) {
+	r, err := Load(writeConfig(t, `
+fallback = "backup"
+
+[providers.primary]
+base_url = "https://primary.example"
+api_key = "k1"
+models = ["m"]
+default_model = "m"
+
+[providers.backup]
+base_url = "https://backup.example"
+api_key = "k2"
+models = ["m"]
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	primary, _ := r.Client("primary")
+	if d, _ := r.Default(); d != primary {
+		t.Fatalf("default selected fallback provider %q", d.Name())
+	}
+	configured, err := r.WithFallback(primary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := configured.(*FallbackClient); !ok {
+		t.Fatalf("configured client = %T", configured)
+	}
+}
+
+func TestWithFallbackRejectsUnknownProvider(t *testing.T) {
+	r, err := Load(writeConfig(t, `
+fallback = "missing"
+[providers.primary]
+base_url = "https://primary.example"
+api_key = "k1"
+models = ["m"]
+default_model = "m"
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	primary, _ := r.Client("primary")
+	if _, err := r.WithFallback(primary); err == nil {
+		t.Fatal("expected missing fallback error")
 	}
 }

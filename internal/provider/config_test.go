@@ -31,3 +31,13 @@ func TestDecodeConfig(t *testing.T) {
 		t.Fatalf("mode = %q", cfg.Mode)
 	}
 }
+
+func TestDecodeFallbackProvider(t *testing.T) {
+	var cfg Config
+	if _, err := toml.Decode(`fallback = "backup"`, &cfg); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Fallback != "backup" {
+		t.Fatalf("fallback = %q", cfg.Fallback)
+	}
+}

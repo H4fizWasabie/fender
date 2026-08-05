@@ -34,14 +34,17 @@ func run(out io.Writer, args []string) int {
 func runCLI(out io.Writer, args []string) error {
 	fs := flag.NewFlagSet("fender", flag.ContinueOnError)
 	configPath := fs.String("config", "", "path to fender.toml (default: ./fender.toml, then ~/.fender/fender.toml)")
-	fresh := fs.Bool("new", false, "start a fresh session (don't resume)")
+	fresh := fs.Bool("new", false, "start a fresh session (default; retained for compatibility)")
+	resumeID := fs.String("resume", "", "resume a saved session by ID, or use latest")
 	fs.SetOutput(out)
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	if *fresh && *resumeID != "" {
+		return fmt.Errorf("--new and --resume cannot be used together")
+	}
 	if fs.NArg() == 0 {
-		// interactive REPL (D26), resumes latest session unless --new (D41)
-		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *fresh)
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *resumeID)
 	}
 	switch fs.Arg(0) {
 	case "providers":
@@ -58,7 +61,7 @@ func runCLI(out io.Writer, args []string) error {
 	case "intel":
 		return intelCommand(out, fs.Args()[1:])
 	case "repl":
-		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *fresh)
+		return repl(out, out, bufio.NewReader(os.Stdin), *configPath, *resumeID)
 	case "dashboard":
 		return dashboard(out, *configPath)
 	case "sessions":

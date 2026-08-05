@@ -25,7 +25,7 @@ func TestShellRefuseNeverRuns(t *testing.T) {
 	reg := New(proj, ShellConfig{
 		Mode:       guardrail.Yolo, // REFUSE is hard in all modes (D22)
 		ProjectDir: proj,
-		Approver: func(cmd, reason string) (bool, error) {
+		Approver: func(_ context.Context, cmd, reason string) (bool, error) {
 			called = true
 			return true, nil
 		},
@@ -45,7 +45,7 @@ func TestShellAskApproved(t *testing.T) {
 	reg := New(proj, ShellConfig{
 		Mode:       guardrail.Balanced,
 		ProjectDir: proj,
-		Approver: func(cmd, reason string) (bool, error) {
+		Approver: func(_ context.Context, cmd, reason string) (bool, error) {
 			approved = true
 			return true, nil
 		},
@@ -63,7 +63,7 @@ func TestShellAskDenied(t *testing.T) {
 	reg := New(proj, ShellConfig{
 		Mode:       guardrail.Balanced,
 		ProjectDir: proj,
-		Approver:   func(cmd, reason string) (bool, error) { return false, nil },
+		Approver:   func(context.Context, string, string) (bool, error) { return false, nil },
 	}, nil)
 	_, err := reg.Execute(context.Background(), "shell", `{"command":"tee /tmp/fender-test-deny"}`)
 	if err == nil || !strings.Contains(err.Error(), "denied") {

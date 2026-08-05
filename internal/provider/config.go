@@ -4,7 +4,7 @@ package provider
 // Config is the [providers] section of fender.toml.
 type Config struct {
 	Mode      string              `toml:"mode"`     // permission mode: strict | balanced | yolo (D21)
-	Subagent  string              `toml:"subagent"` // default provider for subagents (D48)
+	Fallback  string              `toml:"fallback"` // backup provider/key after a failed model request (D50)
 	Providers map[string]Provider `toml:"providers"`
 }
 

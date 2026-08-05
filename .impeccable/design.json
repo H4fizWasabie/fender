@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-05T03:49:52Z",
+  "title": "Design System: Fender",
+  "extensions": {
+    "colorMeta": {
+      "stock": {
+        "role": "neutral",
+        "displayName": "Technical Stock",
+        "canonical": "#f2f0e8",
+        "tonalRamp": ["oklch(15% 0.0108 95.2)", "oklch(27% 0.0108 95.2)", "oklch(39% 0.0108 95.2)", "oklch(51% 0.0108 95.2)", "oklch(63% 0.0108 95.2)", "oklch(75% 0.0108 95.2)", "oklch(87% 0.0108 95.2)", "oklch(95% 0.0108 95.2)"]
+      },
+      "stock-deep": {
+        "role": "neutral",
+        "displayName": "Deep Stock",
+        "canonical": "#e8e5da",
+        "tonalRamp": ["oklch(15% 0.0151 94.2)", "oklch(27% 0.0151 94.2)", "oklch(39% 0.0151 94.2)", "oklch(51% 0.0151 94.2)", "oklch(63% 0.0151 94.2)", "oklch(75% 0.0151 94.2)", "oklch(87% 0.0151 94.2)", "oklch(95% 0.0151 94.2)"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Docket Paper",
+        "canonical": "#faf8f1",
+        "tonalRamp": ["oklch(15% 0.0095 93.6)", "oklch(27% 0.0095 93.6)", "oklch(39% 0.0095 93.6)", "oklch(51% 0.0095 93.6)", "oklch(63% 0.0095 93.6)", "oklch(75% 0.0095 93.6)", "oklch(87% 0.0095 93.6)", "oklch(95% 0.0095 93.6)"]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite Ink",
+        "canonical": "#1d2321",
+        "tonalRamp": ["oklch(15% 0.0095 173.4)", "oklch(27% 0.0095 173.4)", "oklch(39% 0.0095 173.4)", "oklch(51% 0.0095 173.4)", "oklch(63% 0.0095 173.4)", "oklch(75% 0.0095 173.4)", "oklch(87% 0.0095 173.4)", "oklch(95% 0.0095 173.4)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Graphite",
+        "canonical": "#626763",
+        "tonalRamp": ["oklch(15% 0.0088 151.7)", "oklch(27% 0.0088 151.7)", "oklch(39% 0.0088 151.7)", "oklch(51% 0.0088 151.7)", "oklch(63% 0.0088 151.7)", "oklch(75% 0.0088 151.7)", "oklch(87% 0.0088 151.7)", "oklch(95% 0.0088 151.7)"]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#c8ccc4",
+        "tonalRamp": ["oklch(15% 0.0118 128.6)", "oklch(27% 0.0118 128.6)", "oklch(39% 0.0118 128.6)", "oklch(51% 0.0118 128.6)", "oklch(63% 0.0118 128.6)", "oklch(75% 0.0118 128.6)", "oklch(87% 0.0118 128.6)", "oklch(95% 0.0118 128.6)"]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Dark Rule",
+        "canonical": "#9da39d",
+        "tonalRamp": ["oklch(15% 0.0110 145.5)", "oklch(27% 0.0110 145.5)", "oklch(39% 0.0110 145.5)", "oklch(51% 0.0110 145.5)", "oklch(63% 0.0110 145.5)", "oklch(75% 0.0110 145.5)", "oklch(87% 0.0110 145.5)", "oklch(95% 0.0110 145.5)"]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "Action White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"]
+      },
+      "orange": {
+        "role": "primary",
+        "displayName": "Safety Orange",
+        "canonical": "#d94f16",
+        "tonalRamp": ["oklch(15% 0.1839 39.2)", "oklch(27% 0.1839 39.2)", "oklch(39% 0.1839 39.2)", "oklch(51% 0.1839 39.2)", "oklch(63% 0.1839 39.2)", "oklch(75% 0.1839 39.2)", "oklch(87% 0.1839 39.2)", "oklch(95% 0.1839 39.2)"]
+      },
+      "orange-dark": {
+        "role": "primary",
+        "displayName": "Burnt Orange",
+        "canonical": "#a9380e",
+        "tonalRamp": ["oklch(15% 0.1559 37.9)", "oklch(27% 0.1559 37.9)", "oklch(39% 0.1559 37.9)", "oklch(51% 0.1559 37.9)", "oklch(63% 0.1559 37.9)", "oklch(75% 0.1559 37.9)", "oklch(87% 0.1559 37.9)", "oklch(95% 0.1559 37.9)"]
+      },
+      "orange-soft": {
+        "role": "primary",
+        "displayName": "Pale Orange Wash",
+        "canonical": "#f6e1d7",
+        "tonalRamp": ["oklch(15% 0.0268 47.2)", "oklch(27% 0.0268 47.2)", "oklch(39% 0.0268 47.2)", "oklch(51% 0.0268 47.2)", "oklch(63% 0.0268 47.2)", "oklch(75% 0.0268 47.2)", "oklch(87% 0.0268 47.2)", "oklch(95% 0.0268 47.2)"]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Verification Green",
+        "canonical": "#286a4a",
+        "tonalRamp": ["oklch(15% 0.0854 159.3)", "oklch(27% 0.0854 159.3)", "oklch(39% 0.0854 159.3)", "oklch(51% 0.0854 159.3)", "oklch(63% 0.0854 159.3)", "oklch(75% 0.0854 159.3)", "oklch(87% 0.0854 159.3)", "oklch(95% 0.0854 159.3)"]
+      },
+      "green-dark": {
+        "role": "secondary",
+        "displayName": "Deep Verification Green",
+        "canonical": "#1e553b",
+        "tonalRamp": ["oklch(15% 0.0731 159.8)", "oklch(27% 0.0731 159.8)", "oklch(39% 0.0731 159.8)", "oklch(51% 0.0731 159.8)", "oklch(63% 0.0731 159.8)", "oklch(75% 0.0731 159.8)", "oklch(87% 0.0731 159.8)", "oklch(95% 0.0731 159.8)"]
+      },
+      "green-soft": {
+        "role": "secondary",
+        "displayName": "Verification Wash",
+        "canonical": "#deebe3",
+        "tonalRamp": ["oklch(15% 0.0175 159.1)", "oklch(27% 0.0175 159.1)", "oklch(39% 0.0175 159.1)", "oklch(51% 0.0175 159.1)", "oklch(63% 0.0175 159.1)", "oklch(75% 0.0175 159.1)", "oklch(87% 0.0175 159.1)", "oklch(95% 0.0175 159.1)"]
+      },
+      "green-border": {
+        "role": "secondary",
+        "displayName": "Verification Rule",
+        "canonical": "#87a794",
+        "tonalRamp": ["oklch(15% 0.0448 158.9)", "oklch(27% 0.0448 158.9)", "oklch(39% 0.0448 158.9)", "oklch(51% 0.0448 158.9)", "oklch(63% 0.0448 158.9)", "oklch(75% 0.0448 158.9)", "oklch(87% 0.0448 158.9)", "oklch(95% 0.0448 158.9)"]
+      },
+      "completion-border": {
+        "role": "secondary",
+        "displayName": "Completion Rule",
+        "canonical": "#71927f",
+        "tonalRamp": ["oklch(15% 0.0467 159.5)", "oklch(27% 0.0467 159.5)", "oklch(39% 0.0467 159.5)", "oklch(51% 0.0467 159.5)", "oklch(63% 0.0467 159.5)", "oklch(75% 0.0467 159.5)", "oklch(87% 0.0467 159.5)", "oklch(95% 0.0467 159.5)"]
+      },
+      "red": {
+        "role": "tertiary",
+        "displayName": "Failure Red",
+        "canonical": "#a9362c",
+        "tonalRamp": ["oklch(15% 0.1524 28.7)", "oklch(27% 0.1524 28.7)", "oklch(39% 0.1524 28.7)", "oklch(51% 0.1524 28.7)", "oklch(63% 0.1524 28.7)", "oklch(75% 0.1524 28.7)", "oklch(87% 0.1524 28.7)", "oklch(95% 0.1524 28.7)"]
+      },
+      "red-soft": {
+        "role": "tertiary",
+        "displayName": "Failure Wash",
+        "canonical": "#f2dfdc",
+        "tonalRamp": ["oklch(15% 0.0214 28.3)", "oklch(27% 0.0214 28.3)", "oklch(39% 0.0214 28.3)", "oklch(51% 0.0214 28.3)", "oklch(63% 0.0214 28.3)", "oklch(75% 0.0214 28.3)", "oklch(87% 0.0214 28.3)", "oklch(95% 0.0214 28.3)"]
+      },
+      "red-border": {
+        "role": "tertiary",
+        "displayName": "Failure Rule",
+        "canonical": "#c89790",
+        "tonalRamp": ["oklch(15% 0.0602 27.9)", "oklch(27% 0.0602 27.9)", "oklch(39% 0.0602 27.9)", "oklch(51% 0.0602 27.9)", "oklch(63% 0.0602 27.9)", "oklch(75% 0.0602 27.9)", "oklch(87% 0.0602 27.9)", "oklch(95% 0.0602 27.9)"]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Hold Amber",
+        "canonical": "#9a5a0a",
+        "tonalRamp": ["oklch(15% 0.1171 63.1)", "oklch(27% 0.1171 63.1)", "oklch(39% 0.1171 63.1)", "oklch(51% 0.1171 63.1)", "oklch(63% 0.1171 63.1)", "oklch(75% 0.1171 63.1)", "oklch(87% 0.1171 63.1)", "oklch(95% 0.1171 63.1)"]
+      },
+      "amber-soft": {
+        "role": "tertiary",
+        "displayName": "Hold Wash",
+        "canonical": "#f4e7ce",
+        "tonalRamp": ["oklch(15% 0.0359 83.8)", "oklch(27% 0.0359 83.8)", "oklch(39% 0.0359 83.8)", "oklch(51% 0.0359 83.8)", "oklch(63% 0.0359 83.8)", "oklch(75% 0.0359 83.8)", "oklch(87% 0.0359 83.8)", "oklch(95% 0.0359 83.8)"]
+      },
+      "amber-border": {
+        "role": "tertiary",
+        "displayName": "Hold Rule",
+        "canonical": "#c8a66e",
+        "tonalRamp": ["oklch(15% 0.0835 79.4)", "oklch(27% 0.0835 79.4)", "oklch(39% 0.0835 79.4)", "oklch(51% 0.0835 79.4)", "oklch(63% 0.0835 79.4)", "oklch(75% 0.0835 79.4)", "oklch(87% 0.0835 79.4)", "oklch(95% 0.0835 79.4)"]
+      },
+      "disabled": {
+        "role": "neutral",
+        "displayName": "Disabled Graphite",
+        "canonical": "#747873",
+        "tonalRamp": ["oklch(15% 0.0089 139.4)", "oklch(27% 0.0089 139.4)", "oklch(39% 0.0089 139.4)", "oklch(51% 0.0089 139.4)", "oklch(63% 0.0089 139.4)", "oklch(75% 0.0089 139.4)", "oklch(87% 0.0089 139.4)", "oklch(95% 0.0089 139.4)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Task Display",
+        "purpose": "The fresh-session question or active task headline."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "Evidence-lane and drawer headings."
+      },
+      "body": {
+        "displayName": "Humanist Body",
+        "purpose": "Controls, task copy, conversation, and final handoff text."
+      },
+      "label": {
+        "displayName": "Machine Label",
+        "purpose": "Uppercase stamps, roles, and compact event metadata."
+      },
+      "data": {
+        "displayName": "Runtime Data",
+        "purpose": "Repository, provider, model, permission, ID, and status facts."
+      },
+      "event-meta": {
+        "displayName": "Event Metadata",
+        "purpose": "The smallest source and state labels inside evidence slips."
+      },
+      "supporting": {
+        "displayName": "Supporting Copy",
+        "purpose": "Context explanations, notes, and evidence detail."
+      },
+      "detail": {
+        "displayName": "Compact Detail",
+        "purpose": "Drawer copy and compact transient detail."
+      },
+      "compact-control": {
+        "displayName": "Compact Control",
+        "purpose": "Saved-session titles and other dense navigation controls."
+      },
+      "empty-copy": {
+        "displayName": "Empty-State Lead",
+        "purpose": "The larger explanatory sentence shown before the first task."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "The product name in the desktop ledger."
+      },
+      "wordmark-compact": {
+        "displayName": "Compact Wordmark",
+        "purpose": "The product name in the narrow ledger."
+      }
+    },
+    "shadows": [
+      {
+        "name": "composer-focus",
+        "value": "0 8px 22px rgba(29, 35, 33, .07)",
+        "purpose": "Low diffuse lift on the task composer only while it contains focus."
+      },
+      {
+        "name": "transient-toast",
+        "value": "0 10px 28px rgba(29, 35, 33, .22)",
+        "purpose": "Temporary separation for toast messages above the workbench."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Primary easing for lane, drawer, and toast movement."
+      },
+      {
+        "name": "evidence-lane-reveal",
+        "value": "480ms cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "One reveal when real runtime evidence first attaches."
+      },
+      {
+        "name": "session-drawer-slide",
+        "value": "420ms cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Saved-session drawer entrance and exit."
+      },
+      {
+        "name": "action-feedback",
+        "value": "160ms ease",
+        "purpose": "Primary-button hover and press feedback."
+      },
+      {
+        "name": "working-pulse",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "The run-status dot only while work is active."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Collapses animation and transition duration when reduced motion is requested."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "evidence-stack",
+        "value": "1180px"
+      },
+      {
+        "name": "index-drawer",
+        "value": "820px"
+      },
+      {
+        "name": "compact-mobile",
+        "value": "580px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Session Tab",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The attached orange tab for starting a fresh session.",
+      "html": "<button class=\"ds-primary-tab\" type=\"button\"><svg class=\"ds-primary-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg><span>New session</span></button>",
+      "css": ".ds-primary-tab { min-height: 48px; display: inline-flex; align-items: center; gap: 10px; padding: 0 14px; color: #fff; background: var(--orange); border: 0; border-radius: 8px 8px 2px 8px; font-family: var(--font-ui); font-size: 15px; font-weight: 700; cursor: pointer; transition: background-color 160ms ease, transform 160ms ease; } .ds-primary-tab:hover { background: var(--orange-dark); } .ds-primary-tab:active { transform: translateY(1px); } .ds-primary-tab:focus-visible { outline: 3px solid var(--orange-dark); outline-offset: 3px; } .ds-primary-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; }"
+    },
+    {
+      "name": "Quiet Resume Action",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A secondary session action that remains visibly subordinate to starting fresh.",
+      "html": "<button class=\"ds-quiet-action\" type=\"button\"><svg class=\"ds-quiet-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 12a8 8 0 1 0 2.4-5.7L4 8.7M4 4v4.7h4.7M12 8v4l2.8 1.8\"/></svg><span>Resume earlier work</span></button>",
+      "css": ".ds-quiet-action { min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 12px; color: var(--graphite); background: transparent; border: 1px solid transparent; border-radius: 8px; font-family: var(--font-ui); font-size: 15px; cursor: pointer; } .ds-quiet-action:hover { background: rgba(255, 255, 255, .45); border-color: var(--rule); } .ds-quiet-action:focus-visible { outline: 3px solid var(--orange-dark); outline-offset: 3px; } .ds-quiet-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Task Composer",
+      "kind": "input",
+      "refersTo": "input-composer",
+      "description": "The central task field with an attached primary submit tab.",
+      "html": "<form class=\"ds-composer\"><label class=\"ds-composer-label\" for=\"ds-task\">Task for Fender</label><textarea class=\"ds-composer-input\" id=\"ds-task\" rows=\"3\" placeholder=\"Describe the work to complete…\"></textarea><div class=\"ds-composer-footer\"><button class=\"ds-send-tab\" type=\"button\">Assign work</button></div></form>",
+      "css": ".ds-composer { background: #fffdf7; border: 1px solid var(--rule-dark); border-radius: 8px 8px 2px 8px; font-family: var(--font-ui); } .ds-composer:focus-within { border-color: var(--graphite); box-shadow: 0 8px 22px rgba(29, 35, 33, .07); } .ds-composer-label { display: block; padding: 15px 18px 0; color: var(--muted); font-family: var(--font-data); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; } .ds-composer-input { width: 100%; min-height: 96px; display: block; resize: none; padding: 12px 18px 18px; color: var(--graphite); background: transparent; border: 0; outline: 0; font: 15px/1.55 var(--font-ui); } .ds-composer-input::placeholder { color: #686d68; opacity: 1; } .ds-composer-footer { min-height: 52px; display: flex; justify-content: flex-end; border-top: 1px solid var(--rule); } .ds-send-tab { min-width: 154px; padding: 0 20px; color: #fff; background: var(--orange); border: 0; border-radius: 0 0 1px 0; font: 720 15px var(--font-ui); cursor: pointer; } .ds-send-tab:hover { background: var(--orange-dark); } .ds-send-tab:focus-visible, .ds-composer-input:focus-visible { outline: 3px solid var(--orange-dark); outline-offset: 3px; }"
+    },
+    {
+      "name": "Run Status",
+      "kind": "chip",
+      "refersTo": "status-complete",
+      "description": "A dot, tint, border, and text label that communicate one runtime state without color alone.",
+      "html": "<span class=\"ds-run-status\"><i aria-hidden=\"true\"></i><span>Complete</span></span>",
+      "css": ".ds-run-status { min-height: 34px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--green); background: var(--green-soft); border: 1px solid var(--green-border); border-radius: 999px; font: 700 11px/1.5 var(--font-data); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; } .ds-run-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }"
+    },
+    {
+      "name": "Task Docket",
+      "kind": "card",
+      "refersTo": "card-docket",
+      "description": "The dominant clipped sheet that owns the active task and conversation.",
+      "html": "<section class=\"ds-docket\"><p class=\"ds-docket-stamp\">NEW SESSION</p><h2 class=\"ds-docket-title\">What should Fender do?</h2><p class=\"ds-docket-copy\">One task and its truthful runtime handoff live on this sheet.</p></section>",
+      "css": ".ds-docket { position: relative; padding: 32px; color: var(--graphite); background: var(--paper); border: 1px solid var(--rule-dark); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); font-family: var(--font-ui); } .ds-docket::before { content: \"\"; position: absolute; top: -1px; right: 54px; width: 84px; height: 6px; background: var(--orange); } .ds-docket-stamp { margin: 0; color: var(--orange-dark); font: 650 10px/1.5 var(--font-data); letter-spacing: .09em; text-transform: uppercase; } .ds-docket-title { max-width: 22ch; margin: 8px 0 0; font-size: clamp(32px, 4vw, 46px); line-height: 1.04; letter-spacing: -.035em; } .ds-docket-copy { max-width: 60ch; margin: 24px 0 0; font-size: 15px; line-height: 1.5; }"
+    },
+    {
+      "name": "Evidence Slip",
+      "kind": "card",
+      "refersTo": "card-evidence",
+      "description": "A compact attachment for one real observer event, with detail disclosed only when available.",
+      "html": "<article class=\"ds-evidence-slip\"><span class=\"ds-slip-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-3-3z\"/></svg></span><div><strong>Tool activity</strong><p>Main agent · Emitted</p></div></article>",
+      "css": ".ds-evidence-slip { position: relative; display: flex; align-items: flex-start; gap: 11px; padding: 16px; color: var(--graphite); background: var(--paper); border: 1px solid var(--rule-dark); border-radius: 2px 8px 2px 8px; font-family: var(--font-ui); } .ds-evidence-slip::after { content: \"\"; position: absolute; right: -1px; top: 14px; width: 4px; height: 24px; background: var(--rule-dark); } .ds-slip-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; background: var(--stock); border: 1px solid var(--rule); border-radius: 50%; } .ds-slip-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; } .ds-evidence-slip strong { display: block; font-size: 13px; line-height: 1.3; } .ds-evidence-slip p { margin: 4px 0 0; color: var(--muted); font: 650 9px/1.5 var(--font-data); letter-spacing: .09em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Guardrail Decision",
+      "kind": "custom",
+      "description": "The paired deny-or-approve decision attached to a real pending hold.",
+      "html": "<div class=\"ds-approval-actions\"><button class=\"ds-approval-deny\" type=\"button\">Deny</button><button class=\"ds-approval-allow\" type=\"button\">Approve once</button></div>",
+      "css": ".ds-approval-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-ui); } .ds-approval-actions button { min-height: 36px; padding: 0 10px; border: 1px solid var(--rule-dark); border-radius: 6px; font: 700 12px var(--font-ui); cursor: pointer; } .ds-approval-deny { color: var(--graphite); background: transparent; } .ds-approval-deny:hover { background: var(--stock); } .ds-approval-allow { color: #fff; background: var(--green); border-color: var(--green) !important; } .ds-approval-allow:hover { background: var(--green-dark); } .ds-approval-actions button:focus-visible { outline: 3px solid var(--orange-dark); outline-offset: 3px; }"
+    },
+    {
+      "name": "Saved Session Item",
+      "kind": "nav",
+      "description": "A full-width ruled row for explicitly resuming one saved local session.",
+      "html": "<button class=\"ds-session-item\" type=\"button\"><strong>Saved session</strong><time>Time unavailable</time><span>Saved</span></button>",
+      "css": ".ds-session-item { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 16px; padding: 18px 4px; color: var(--graphite); background: transparent; border: 0; border-bottom: 1px solid var(--rule); font-family: var(--font-ui); text-align: left; cursor: pointer; } .ds-session-item:hover { background: var(--stock); } .ds-session-item:focus-visible { outline: 3px solid var(--orange-dark); outline-offset: 3px; } .ds-session-item strong { overflow: hidden; font-size: 14px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; } .ds-session-item time, .ds-session-item span { color: var(--muted); font: 10px/1.5 var(--font-data); } .ds-session-item time { grid-column: 1; } .ds-session-item span { grid-column: 2; grid-row: 1 / 3; align-self: center; text-transform: uppercase; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Engineer's Job Docket",
+    "overview": "Fender's browser visual system treats one coding task as a technical job docket: a calm sheet that gathers instruction, activity, exceptions, and the final runtime handoff. The metaphor supplies hierarchy, clipped geometry, index tabs, stamps, and inspection slips without becoming literal office decoration. It is direct, matte, and operational rather than ornamental.\n\nThe browser is the complete visual expression of this system. It begins quietly with one obvious task action, reveals evidence only when the runtime emits it, and preserves deeper facts for inspection. The terminal remains a plain streaming transcript and is not a second visual expression of the docket. No raster texture, external imagery, fabricated logo, or decorative proof asset is part of the system.",
+    "keyCharacteristics": [
+      "Warm technical stock and paper surfaces separated by graphite and neutral rules.",
+      "One dominant task sheet, one compact session index, and evidence slips that attach only when real events exist.",
+      "Flat matte geometry with clipped corners, restrained tabs, and almost no elevation.",
+      "Safety orange for action and attention; verification green only for proven completion.",
+      "Authored line symbols and machine labels that make runtime facts scannable without resembling an IDE."
+    ],
+    "rules": [
+      {
+        "name": "The Evidence Color Rule",
+        "body": "Green means the runtime has actually completed or approved something; orange means action, progress, or a pending decision; amber means blocked or stalled; red means error, denial, cancellation, or disconnection. Text, iconography, and geometry must carry the same meaning so color is never the only signal.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stock, Not Texture Rule",
+        "body": "Warmth comes from flat color fields and rules. Do not add paper grain, noise, gradients, glass, or photographic texture.",
+        "section": "colors"
+      },
+      {
+        "name": "The Human First, Machine Second Rule",
+        "body": "Use the humanist stack for tasks, decisions, and explanations; reserve mono for short runtime facts. Never set long-form conversation or handoff copy in mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Docket Owns the Center Rule",
+        "body": "Repository context supports the task from the edge, and evidence attaches after activity; neither becomes a competing primary workspace.",
+        "section": "layout"
+      },
+      {
+        "name": "The Evidence Must Exist Rule",
+        "body": "Do not reserve space for, count, or label checks, files, tool activity, or completion evidence until the backend has supplied that truth.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat by Default Rule",
+        "body": "No soft card shadows, stacked floating panels, blur, or glass. Elevation is an interaction exception, not a resting style.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Not-a-Logo Rule",
+        "body": "The Fender wordmark is text. Orange slashes, bars, and skewed rules are compositional accents, never a fabricated logo or certificate mark.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do keep the browser hierarchy task first, supporting context second, and emitted evidence third.",
+      "Do use the exact state-color semantics and pair color with text, icon, border, or marker changes.",
+      "Do keep sheets matte and separated by 1px rules, clipped geometry, and selective stock tones.",
+      "Do preserve visible focus, keyboard submission, Escape behavior, focus trapping, inert off-canvas regions, live-region announcements, and reduced-motion fallbacks.",
+      "Do show resumed provenance and progressively disclose raw reasoning or machine detail.",
+      "Do render only repository, session, model, permission, observer, approval, and completion facts supplied by the runtime."
+    ],
+    "donts": [
+      "Don't fabricate a logo, paper texture, task count, changed-file count, check result, signature, handoff package, or verification certificate.",
+      "Don't reserve an empty evidence column or make activity compete with the central task docket.",
+      "Don't turn conversation into chat bubbles, source-editor chrome, a VS Code imitation, or a generic AI sidebar.",
+      "Don't use Verification Green for aspiration, decoration, in-progress work, or an unproven claim.",
+      "Don't add external images, raster assets, icon libraries, gradients, glass, ambient card shadows, or decorative motion.",
+      "Don't apply this visual redesign to the terminal; it remains a plain streaming transcript."
+    ]
+  }
+}

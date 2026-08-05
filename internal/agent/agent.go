@@ -1,12 +1,11 @@
 // Package agent implements D13: ONE loop. Agent{LLM, Tools} runs the
 // canonical loop (prompt -> LLM -> tool call -> execute -> result -> repeat).
-// Subagents are the same type in a goroutine (delegate tool, Task 7).
+// A child agent is the same type with fresh ephemeral state (delegate tool).
 package agent
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
@@ -26,10 +25,12 @@ type LLM interface {
 // JSON tags are load-bearing: the dashboard SSE (ticket 12) marshals events
 // and the browser switches on lowercase keys.
 type Event struct {
-	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "done"
+	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "approval" | "done"
 	Text   string `json:"text"`             // delta text / tool description / final reply
 	Status string `json:"status"`           // tool status ("ok"|"error"|"cached") or result status
-	Source string `json:"source,omitempty"` // "" = main agent; "subagent:<provider>" (D48)
+	Source string `json:"source,omitempty"` // "" = main agent; "child" = ephemeral child (D50)
+	ID     string `json:"id,omitempty"`     // pending interaction identity (D51 approval holds)
+	Detail string `json:"detail,omitempty"` // user-facing reason or supporting runtime detail
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
@@ -41,31 +42,28 @@ type Streamer interface {
 const (
 	defaultMaxIter    = 30
 	defaultMaxSubIter = 6
+	maxEventDetail    = 8_000
 	orientationPrompt = `(orientation turn — harness-enforced) Stop and orient before acting again. Reply with exactly four points: 1) what you know, 2) what is uncertain, 3) your hypothesis for the failures so far, 4) the single next distinct action. Do not repeat a failed or already-executed call.`
 )
 
 // Agent is one loop: model + tools + discipline. The same type runs the
-// parent and every subagent (D13).
+// main agent and every ephemeral child (D13, D50).
 type Agent struct {
-	Name            string // "main" (default) or "subagent:<provider>" (D48)
-	DefaultSubagent string // provider used when delegate omits "provider" (config `subagent =`)
-	LLM             LLM
-	Resolver        Resolver // subagent provider selection (D7); nil -> inherit parent LLM
-	System          string
-	MaxIter         int              // 0 -> defaultMaxIter
-	MaxSubIter      int              // 0 -> defaultMaxSubIter
-	Ctx             *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
-	Observer        func(Event)      // renderer seam (ticket 08); nil-safe
-	Mem             *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
-	Skills          *skills.Registry // D27 skills; nil = ticket-05 behavior
-	registry        *tools.Registry
+	LLM        LLM
+	System     string
+	MaxIter    int              // 0 -> defaultMaxIter
+	MaxSubIter int              // 0 -> defaultMaxSubIter
+	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
+	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
+	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
+	registry   *tools.Registry
 }
 
 // NewAgent wires llm to reg and registers the delegate tool (D13).
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
 	a := &Agent{LLM: llm, registry: reg}
 	a.registry.Add(a.delegateTool())
-	a.registry.Add(a.askTool()) // D49: one-shot other-key call — the call IS the subagent
 	a.registry.Add(a.loadSkillTool())
 	return a
 }
@@ -89,26 +87,27 @@ type Result struct {
 // ctx cancellation. Flat by default; on thrash (tool errors, repeated same
 // call, no progress) it injects ONE orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
+	system := a.System
 	if a.Mem != nil {
 		if b, err := a.Mem.Bootstrap(); err == nil {
-			a.System = b.System() + a.System // constitution first, then task-specific
+			system = b.System() + system // constitution first, then task-specific
 		}
 	}
 	if a.Skills != nil {
 		if core, ok := a.Skills.PonytailCore(); ok {
-			a.System = core.Body + "\n\n" + a.System // D30: always-loaded discipline
+			system = core.Body + "\n\n" + system // D30: always-loaded discipline
 		}
-		a.System = a.Skills.Descriptions() + "\n" + a.System
+		system = a.Skills.Descriptions() + "\n" + system
 		for _, s := range a.Skills.Match(lastUserContent(msgs)) {
-			a.System += "\n[skill loaded: " + s.Name + "]\n" + s.Body
+			system += "\n[skill loaded: " + s.Name + "]\n" + s.Body
 		}
 	}
 	if a.Ctx != nil {
 		a.Ctx.Cleanup(ctxpkg.SweepAge)
-		msgs = a.Ctx.For(a.System, msgs)
+		msgs = a.Ctx.For(system, msgs)
 	}
-	if a.System != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
-		msgs = append([]provider.Message{{Role: "system", Content: a.System}}, msgs...)
+	if system != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
+		msgs = append([]provider.Message{{Role: "system", Content: system}}, msgs...)
 	}
 	maxIter := a.MaxIter
 	if maxIter == 0 {
@@ -161,19 +160,11 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			continue
 		}
 
-		// Act: execute each tool call; observe: feed results back.
-		// Parallel dispatch (D48): independent calls in one turn run
-		// concurrently (N goroutines, join) — subagents especially benefit.
+		// Act: execute tool calls in model order; observe: feed results back.
+		// Sequential execution is deliberate (D50): edits, shell commands, and
+		// delegated work must not race without an explicit future decision.
 		progress := false
 		var executedKey string
-		type pending struct {
-			tc     provider.ToolCall
-			key    string
-			cached bool
-			out    string
-			err    error
-		}
-		var pendings []pending
 		for _, tc := range msg.ToolCalls {
 			if tc.Function.Name == completionToolName {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: completionError})
@@ -181,53 +172,31 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			}
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
 			if out, ok := dedup[key]; ok {
-				pendings = append(pendings, pending{tc: tc, key: key, cached: true, out: out})
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
 				executedKey = key // repeat detection: cached calls are not progress
-				continue
-			}
-			pendings = append(pendings, pending{tc: tc, key: key})
-		}
-		// launch unique calls concurrently (D48), join, collect in order
-		var wg sync.WaitGroup
-		for i := range pendings {
-			p := &pendings[i]
-			if p.cached {
-				continue
-			}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				out, err := a.registry.Execute(ctx, p.tc.Function.Name, p.tc.Function.Arguments)
-				if err == nil && a.Ctx != nil {
-					out = a.Ctx.CompactOutput(p.tc.Function.Name, out)
-				}
-				p.out, p.err = out, err
-			}()
-		}
-		wg.Wait()
-		for _, p := range pendings {
-			tc := p.tc
-			if p.cached {
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + p.out})
 				if a.Observer != nil {
-					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached"})
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached", Detail: eventDetail(out)})
 				}
 				continue
 			}
-			if p.err != nil {
+			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
+			if err != nil {
 				errors++
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + p.err.Error()})
+				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				if a.Observer != nil {
-					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error"})
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error", Detail: eventDetail(err.Error())})
 				}
 				continue
 			}
-			dedup[p.key] = p.out
-			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: p.out})
+			if a.Ctx != nil {
+				out = a.Ctx.CompactOutput(tc.Function.Name, out)
+			}
+			dedup[key] = out
+			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})
 			progress = true
-			executedKey = p.key
+			executedKey = key
 			if a.Observer != nil {
-				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok"})
+				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok", Detail: eventDetail(out)})
 			}
 		}
 
@@ -255,6 +224,16 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	}
 
 	return a.finish(&Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter})
+}
+
+func eventDetail(out string) string {
+	runes := []rune(out)
+	if len(runes) <= maxEventDetail {
+		return out
+	}
+	const marker = "\n… evidence preview truncated …\n"
+	half := (maxEventDetail - len([]rune(marker))) / 2
+	return string(runes[:half]) + marker + string(runes[len(runes)-half:])
 }
 
 // lastUserContent returns the most recent user-role message content.

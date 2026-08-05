@@ -92,8 +92,9 @@ func TestSessionsCommand(t *testing.T) {
 	}
 }
 
-// REPL: history loaded at boot (resume banner), saved after /quit (new file).
-func TestReplResumesAndPersists(t *testing.T) {
+// REPL: history resumes only when explicitly selected, then persists into a
+// new session file so the original remains an immutable recovery point.
+func TestReplExplicitResumeAndPersists(t *testing.T) {
 	chdir(t, t.TempDir())
 	seed := &sessionFile{ID: "20260804-9", Started: "2026", Messages: []provider.Message{{Role: "user", Content: "hi"}}}
 	if err := saveSession(seed); err != nil {
@@ -101,7 +102,7 @@ func TestReplResumesAndPersists(t *testing.T) {
 	}
 	var out, errOut bytes.Buffer
 	in := bufio.NewReader(strings.NewReader("/quit\n"))
-	if err := repl(&out, &errOut, in, "", false); err != nil {
+	if err := repl(&out, &errOut, in, "", seed.ID); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "resumed session 20260804-9") {
@@ -113,5 +114,21 @@ func TestReplResumesAndPersists(t *testing.T) {
 	}
 	if len(entries) != 2 { // seed + new session written on /quit
 		t.Fatalf("expected a new session saved after /quit, got %d entries", len(entries))
+	}
+}
+
+func TestReplDefaultsToFreshSession(t *testing.T) {
+	chdir(t, t.TempDir())
+	seed := &sessionFile{ID: "20260804-9", Started: "2026", Messages: []provider.Message{{Role: "user", Content: "hi"}}}
+	if err := saveSession(seed); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	in := bufio.NewReader(strings.NewReader("/quit\n"))
+	if err := repl(&out, &errOut, in, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "resumed session") {
+		t.Fatalf("default session unexpectedly resumed: %q", out.String())
 	}
 }

@@ -9,24 +9,19 @@ import (
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
 
-// Resolver selects a provider for a subagent by fender.toml name (D7).
-// Nil means subagents inherit the parent's LLM.
-type Resolver func(name string) (LLM, error)
-
 const subagentSystem = "You are an ephemeral subagent of the Fender coding agent. Work on exactly the task you are given, using the available tools. When done, call complete_task alone with status complete and the final answer. If you need something only the parent can provide, call complete_task with status blocked and the exact blocker. Do not ask questions."
 
-// delegateTool is D13: subagent-as-a-tool — the same Agent type runs in a
-// goroutine with its own LLM and returns its final reply as the tool result.
-// Children get the parent's registry minus delegate (one level of nesting).
+// delegateTool is D13/D50: child-agent-as-a-tool. The same Agent type runs
+// synchronously with fresh context and returns its final reply as the tool
+// result. Children get the parent's registry minus delegate (one level only).
 func (a *Agent) delegateTool() tools.Tool {
 	return tools.Tool{
 		Name:        "delegate",
-		Description: "Run an isolated subagent (the same agent loop, fresh context) on a self-contained subtask: research, investigation, or a bounded change. Returns only the subagent's final reply.",
+		Description: "Run an ephemeral child agent (the same loop, fresh context and working memory) on one self-contained subtask. The child cannot delegate and returns only its final reply.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"prompt":   map[string]any{"type": "string", "description": "The full, self-contained task for the subagent."},
-				"provider": map[string]any{"type": "string", "description": "Provider name from fender.toml to run the subagent on (D7). Empty = inherit the parent's model."},
+				"prompt": map[string]any{"type": "string", "description": "The full, self-contained task for the child agent."},
 			},
 			"required": []string{"prompt"},
 		},
@@ -35,74 +30,31 @@ func (a *Agent) delegateTool() tools.Tool {
 			if prompt == "" {
 				return "", errors.New("delegate: empty prompt")
 			}
-			llm := a.LLM
-			providerName := ""
-			if name, _ := args["provider"].(string); name != "" {
-				providerName = name
-			} else if a.DefaultSubagent != "" { // config `subagent =` (D48)
-				providerName = a.DefaultSubagent
-			}
-			if providerName != "" {
-				if a.Resolver == nil {
-					return "", fmt.Errorf("delegate: provider %q requested but no resolver is configured", providerName)
-				}
-				child, err := a.Resolver(providerName)
-				if err != nil {
-					return "", fmt.Errorf("delegate: %v", err)
-				}
-				llm = child
-			}
-			// thinking-level propagation (D47): the child inherits the
-			// parent's /thinking level when both support it
-			if pc, ok := a.LLM.(interface{ Thinking() string }); ok {
-				if tc, ok := llm.(interface{ SetThinking(string) error }); ok && pc.Thinking() != "" {
-					tc.SetThinking(pc.Thinking())
-				}
-			}
-			childName := "subagent:parent-model"
-			if providerName != "" {
-				childName = "subagent:" + providerName
-			}
 			child := &Agent{
-				Name:            childName,
-				LLM:             llm,
-				Resolver:        a.Resolver,
-				System:          subagentSystem,
-				MaxIter:         a.subIter(),
-				MaxSubIter:      a.MaxSubIter,
-				registry:        a.registry.Without("delegate"),
-				Mem:             a.Mem,    // D39: delegates share project memory (artifact context still isolated below)
-				Skills:          a.Skills, // D27: delegates share the skill registry
-				DefaultSubagent: a.DefaultSubagent,
+				LLM:        a.LLM, // same provider chain; backup key is resilience, not identity
+				System:     subagentSystem,
+				MaxIter:    a.subIter(),
+				MaxSubIter: a.MaxSubIter,
+				registry:   a.registry.Without("delegate"), // one level; no grandchildren
+				Mem:        a.Mem.Child(),                  // fresh handle over canonical project grounding
+				Skills:     a.Skills,
 			}
-			// D48: the subagent's live stream flows through the parent's
-			// observer, source-tagged so renderers can distinguish it.
+			// The child's live stream remains observable, but it is one
+			// ephemeral child rather than a provider-addressed agent graph.
 			if a.Observer != nil {
 				child.Observer = func(e Event) {
-					e.Source = childName
+					e.Source = "child"
 					a.Observer(e)
 				}
 			}
 			if a.Ctx != nil {
 				child.Ctx = a.Ctx.Child() // D38: isolated artifacts + catalog
 			}
-			ch := make(chan *Result, 1)
-			go func() {
-				ch <- child.Run(ctx, []provider.Message{{Role: "user", Content: prompt}})
-			}()
-			select {
-			case res := <-ch:
-				if res.Status == "complete" || res.Status == "blocked" {
-					who := "parent-model"
-					if providerName != "" {
-						who = providerName
-					}
-					return fmt.Sprintf("[delegate %s via %s] %s", res.Status, who, res.Reply), nil
-				}
-				return "", fmt.Errorf("delegate %s: %s", res.Status, res.Reply)
-			case <-ctx.Done():
-				return "", ctx.Err()
+			res := child.Run(ctx, []provider.Message{{Role: "user", Content: prompt}})
+			if res.Status == "complete" || res.Status == "blocked" {
+				return fmt.Sprintf("[delegate %s] %s", res.Status, res.Reply), nil
 			}
+			return "", fmt.Errorf("delegate %s: %s", res.Status, res.Reply)
 		},
 	}
 }

@@ -1,0 +1,78 @@
+{
+  "title": "Choose Fender's visual world",
+  "question": "Which direction makes Fender feel simple, informative, and unmistakably built for trustworthy coding work?",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Engineer's Job Docket",
+      "kicker": "THE DIRECTION",
+      "lineage": "Field-service job cards, inspection dockets, and release sign-off sheets",
+      "thesis": "One task sheet gathers every action, exception, and proof until it earns a signed outcome.",
+      "palette": ["#F2F0E8", "#1D2321", "#D45A2A", "#2E6B4F", "#C8CCC4"],
+      "materials": ["technical stock", "graphite rules", "inspection stamps", "metal index tabs"],
+      "viewport": "A single oversized task docket owns the center; attached slips reveal activity, changes, tests, and completion evidence only as they exist.",
+      "risk": "It becomes bureaucratic or skeuomorphic if the job-card metaphor outranks speed and familiar controls.",
+      "sketch": ".impeccable/sketches/assigned.png"
+    },
+    {
+      "id": "one-bit",
+      "label": "One-Bit Workbench",
+      "kicker": "CHALLENGER",
+      "lineage": "Early monochrome desktops, dithered system tools, and compact developer utilities",
+      "thesis": "Fender becomes a crisp black-and-white desktop where one task window contains every state.",
+      "palette": ["#F4F4EE", "#111111", "#777777", "#D9D9D2"],
+      "materials": ["one-bit pixels", "ordered dithering", "square window chrome", "bitmap rules"],
+      "viewport": "One main task window with compact tiled inspectors and no overlapping-window clutter.",
+      "risk": "Nostalgia and high contrast can overpower accessibility, clarity, and modern calm.",
+      "case": "Developer identification is immediate, but nostalgic window grammar weakens calm product clarity.",
+      "sketch": ".impeccable/sketches/one-bit.png",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-one-bit-desktop-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/medium-native-one-bit-desktop.webp"
+    },
+    {
+      "id": "signal",
+      "label": "Signal Bench",
+      "kicker": "CHALLENGER",
+      "lineage": "Oscilloscopes, signal benches, and scientific diagnostic instruments",
+      "thesis": "The run becomes one measured signal, with tools, child work, tests, and failures aligned on a diagnostic trace.",
+      "palette": ["#121614", "#A9F5B4", "#F0B35A", "#65756B"],
+      "materials": ["phosphor trace", "etched graticule", "engraved controls", "matte instrument casing"],
+      "viewport": "One wide diagnostic screen joins the task and composer to a restrained execution trace.",
+      "risk": "Continuous signal imagery can turn runtime truth into decorative monitoring.",
+      "case": "The diagnostic identity is strong, but discrete tasks and evidence do not naturally behave like one waveform.",
+      "sketch": ".impeccable/sketches/signal.png",
+      "hero": "https://impeccable.style/worlds/cards/scientific-notation-oscilloscope-signal-bench-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/scientific-notation-oscilloscope-signal-bench.webp"
+    },
+    {
+      "id": "iridescent",
+      "label": "Iridescent Edge",
+      "kicker": "CHALLENGER",
+      "lineage": "Cloud light, auroras, and restrained spectral edge conditions",
+      "thesis": "A quiet white work surface reveals narrow spectral bands only where state or attention changes.",
+      "palette": ["#F7F8F6", "#263139", "#A7E6D5", "#F0B9C8", "#B9B6EA"],
+      "materials": ["matte white planes", "hairline spectrum bands", "soft atmospheric depth", "slate typography"],
+      "viewport": "A spacious task canvas uses a spectral status edge to disclose activity and evidence layers.",
+      "risk": "It can collapse into generic pastel minimalism with weak developer identification.",
+      "case": "Calm and clarity are excellent, but the visual world says little about serious coding work.",
+      "sketch": ".impeccable/sketches/iridescent.png",
+      "hero": "https://impeccable.style/worlds/cards/clouds-storms-auroras-iridescent-cloud-edge-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/clouds-storms-auroras-iridescent-cloud-edge.webp"
+    }
+  ],
+  "reroll": true,
+  "canon": true,
+  "canonCard": {
+    "id": "canon",
+    "label": "Modern Agent IDE",
+    "kicker": "STANDING CANON",
+    "lineage": "Contemporary code editors and AI-agent sidebars",
+    "thesis": "A polished dark coding-agent workbench with a sidebar, central chat, activity panel, and status bar.",
+    "palette": ["#17191C", "#E7EAF0", "#4B8CF7", "#4DBA75"],
+    "materials": ["flat dark panels", "hairline borders", "syntax accents", "compact status chrome"],
+    "viewport": "A familiar project sidebar, central conversation, right-side activity inspector, and bottom composer.",
+    "risk": "It is immediately familiar, but indistinguishable from existing AI IDEs.",
+    "sketch": ".impeccable/sketches/canon.png"
+  },
+  "steer": true
+}

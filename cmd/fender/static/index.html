@@ -1,101 +1,157 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Fender</title>
-<style>
-  body { margin: 0; font-family: ui-monospace, monospace; background: #111; color: #ddd; display: flex; flex-direction: column; height: 100vh; }
-  #log { flex: 1; overflow-y: auto; padding: 16px; }
-  .user { color: #7ec8ff; margin: 8px 0 2px; }
-  .assistant { white-space: pre-wrap; margin: 2px 0 12px; }
-  .thinking { color: #666; font-style: italic; white-space: pre-wrap; }
-  .tool { color: #999; margin: 4px 0; }
-  .status { color: #4caf50; }
-  .status.error { color: #f44336; }
-  .status.blocked { color: #ffc107; }
-  #inputbar { display: flex; border-top: 1px solid #333; }
-  #input { flex: 1; background: #1a1a1a; color: #ddd; border: 0; padding: 14px; font: inherit; outline: none; }
-  #send { background: #2a6; color: #111; border: 0; padding: 0 20px; font: inherit; cursor: pointer; }
-  #send:disabled { background: #444; cursor: wait; }
-  h1 { font-size: 14px; padding: 8px 16px; border-bottom: 1px solid #333; color: #888; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Fender</title>
+  <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-<h1>fender — dashboard <label style="font-weight:normal;font-size:12px;margin-left:12px"><input type="checkbox" id="showThinking" checked> show thinking</label></h1>
-<div id="log"></div>
-<div id="inputbar">
-  <input id="input" placeholder="type a task…" autofocus>
-  <button id="send">send</button>
-</div>
-<script>
-const log = document.getElementById('log');
-const input = document.getElementById('input');
-const send = document.getElementById('send');
+  <!--
+  THESIS: One task docket gathers action and proof; Fender refuses the generic chat-plus-IDE-panel arrangement.
+  OWN-WORLD: Warm technical stock, graphite rules, safety orange action tabs, verification green, clipped sheets, and flat inspection slips.
+  STORY: Start fresh, direct one main agent, inspect real activity when it exists, resolve holds, and judge the final handoff.
+  FIRST VIEWPORT: A compact session index sits left, the task docket dominates center, and an evidence lane attaches at right only after runtime events. The composer is the central primary action.
+  FORM: Centered Docket, composition 1 of 3; direction seed d238b8e9.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+  -->
+  <svg class="svg-defs" aria-hidden="true">
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7L4 8.7M4 4v4.7h4.7"/><path d="M12 8v4l2.8 1.8"/></symbol>
+    <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M3.5 6.5h6l2 2h9v10h-17z"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.4-2.8 7.5-7 9-4.2-1.5-7-4.6-7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="icon-model" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 12h5M8 15h7"/></symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24"><path d="m4 5 16 7-16 7 3-7zM7 12h13"/></symbol>
+    <symbol id="icon-tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-3-3z"/></symbol>
+    <symbol id="icon-child" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M6.5 20v-3.5A4.5 4.5 0 0 1 11 12h2a4.5 4.5 0 0 1 4.5 4.5V20"/></symbol>
+    <symbol id="icon-think" viewBox="0 0 24 24"><path d="M8 15.5a7 7 0 1 1 8 0V18H8zM9 21h6"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 4 21 20H3z"/><path d="M12 9v5M12 17.5v.1"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  </svg>
 
-function append(cls, text) {
-  const div = document.createElement('div');
-  div.className = cls;
-  div.textContent = text;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-  return div;
-}
+  <div class="app-shell" id="appShell">
+    <header class="ledger-bar">
+      <button class="icon-button mobile-index-toggle" id="mobileIndexToggle" type="button" aria-label="Open session index" aria-expanded="false">
+        <svg><use href="#icon-menu"/></svg>
+      </button>
+      <a class="wordmark" href="/" aria-label="Fender home">Fender</a>
+      <div class="ledger-context" aria-label="Runtime context">
+        <span class="connection-state" id="connectionState"><i></i><span>Connecting</span></span>
+        <span class="ledger-fact"><b>Workspace</b><span id="topWorkspace">—</span></span>
+        <span class="ledger-fact ledger-fact-model"><b>Model</b><span id="topModel">—</span></span>
+        <span class="ledger-fact"><b>Guardrail</b><span id="topMode">—</span></span>
+      </div>
+    </header>
 
-// SSE: live observer events. Deltas accumulate into ONE element per
-// stream — a div per delta was one word per line (ticket-12b).
-const es = new EventSource('/api/events');
-let current = null; // the running assistant/thinking element
+    <aside class="session-index" id="sessionIndex" aria-label="Session index">
+      <div class="index-actions">
+        <button class="primary-tab" id="newSession" type="button">
+          <svg><use href="#icon-plus"/></svg>
+          <span>New session</span>
+        </button>
+        <button class="quiet-action" id="resumeSessions" type="button" aria-controls="sessionDrawer" aria-expanded="false">
+          <svg><use href="#icon-history"/></svg>
+          <span>Resume earlier work</span>
+          <svg class="chevron"><use href="#icon-chevron"/></svg>
+        </button>
+      </div>
 
-function ensure(kind) {
-  if (!current || current.dataset.kind !== kind) {
-    current = append(kind, '');
-    current.dataset.kind = kind;
-  }
-  return current;
-}
+      <div class="index-context">
+        <section class="context-group" aria-labelledby="workspaceLabel">
+          <h2 id="workspaceLabel">Repository</h2>
+          <div class="context-value">
+            <svg><use href="#icon-folder"/></svg>
+            <span id="workspaceName">—</span>
+          </div>
+        </section>
+        <section class="context-group" aria-labelledby="modeLabel">
+          <h2 id="modeLabel">Permission mode</h2>
+          <div class="context-value">
+            <svg><use href="#icon-shield"/></svg>
+            <span id="modeName">—</span>
+          </div>
+          <p id="modeDescription">Loading guardrail context…</p>
+        </section>
+        <section class="context-group model-context" aria-labelledby="modelLabel">
+          <h2 id="modelLabel">Active model</h2>
+          <div class="context-value">
+            <svg><use href="#icon-model"/></svg>
+            <span id="modelName">—</span>
+          </div>
+        </section>
+      </div>
 
-es.onmessage = (e) => {
-  const ev = JSON.parse(e.data);
-  const tag = ev.source ? '[' + ev.source + '] ' : '';
-  switch (ev.kind) {
-    case 'delta':
-      ensure('assistant').textContent += tag + ev.text;
-      break;
-    case 'thinking':
-      if (!document.getElementById('showThinking').checked) break;
-      // collapse mid-word whitespace fragments ("Pon\nyt\nail") — thinking
-      // is stream-of-consciousness, not formatting
-      ensure('thinking').textContent += tag + ev.text.replace(/\s+/g, ' ');
-      break;
-    case 'tool':
-      current = null;
-      append('tool', tag + '[tool ' + ev.text + ': ' + (ev.status || 'ok') + ']');
-      break;
-    case 'done':
-      if (ev.source) break; // subagent completion arrives via the delegate result
-      current = null;
-      append('status' + (ev.status === 'complete' ? '' : '.' + ev.status), '<' + ev.status + '>');
-      if (ev.text) append('assistant', ev.text); // reply via complete_task args
-      send.disabled = false;
-      break;
-  }
-  log.scrollTop = log.scrollHeight;
-};
+      <p class="index-note">One main agent owns the outcome. Child work stays attached to this docket.</p>
+    </aside>
 
-async function submit() {
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  append('user', text);
-  send.disabled = true;
-  await fetch('/api/message', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
-}
-send.onclick = submit;
-input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-</script>
+    <main class="workbench" id="workbench">
+      <section class="task-docket" aria-labelledby="taskHeading">
+        <div class="docket-heading">
+          <div>
+            <p class="session-stamp" id="sessionStamp">NEW SESSION</p>
+            <h1 id="taskHeading">What should Fender do?</h1>
+          </div>
+          <span class="run-status status-ready" id="runStatus"><i></i><span>Ready</span></span>
+        </div>
+
+        <div class="conversation" id="conversation" aria-live="polite" aria-label="Session conversation">
+          <div class="empty-docket" id="emptyDocket">
+            <div class="empty-rule" aria-hidden="true"></div>
+            <p>Describe a change, bug, or question. Fender will work inside this repository and attach activity as it happens.</p>
+            <dl>
+              <div><dt>Start</dt><dd>A fresh session with no inherited conversation.</dd></div>
+              <div><dt>Observe</dt><dd>Tool and child activity appears only when emitted.</dd></div>
+              <div><dt>Review</dt><dd>The final reply remains the source of truth.</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <form class="task-composer" id="taskComposer">
+          <label for="taskInput">Task for Fender</label>
+          <textarea id="taskInput" rows="3" maxlength="200000" placeholder="Describe the work to complete…" required></textarea>
+          <div class="composer-footer">
+            <p><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</p>
+            <button class="send-tab" id="sendTask" type="submit">
+              <span>Assign work</span>
+              <svg><use href="#icon-send"/></svg>
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <aside class="evidence-lane" id="evidenceLane" aria-labelledby="evidenceHeading" hidden>
+      <div class="evidence-heading">
+        <div>
+          <p>Attached to this run</p>
+          <h2 id="evidenceHeading">Activity &amp; evidence</h2>
+        </div>
+        <span id="evidenceCount">0</span>
+      </div>
+      <div class="evidence-list" id="evidenceList" aria-live="polite"></div>
+    </aside>
+  </div>
+
+  <aside class="session-drawer" id="sessionDrawer" aria-labelledby="sessionDrawerTitle" aria-hidden="true" inert>
+    <div class="drawer-heading">
+      <div>
+        <p>Saved locally</p>
+        <h2 id="sessionDrawerTitle">Earlier sessions</h2>
+      </div>
+      <button class="icon-button" id="closeSessions" type="button" aria-label="Close session index">
+        <svg><use href="#icon-close"/></svg>
+      </button>
+    </div>
+    <p class="drawer-copy">Choose a session to restore its conversation. New work will continue under that session ID.</p>
+    <div class="session-list" id="sessionList"></div>
+  </aside>
+  <button class="drawer-scrim" id="drawerScrim" type="button" tabindex="-1" aria-label="Close session drawer"></button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>

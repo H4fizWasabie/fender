@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/codeintel"
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
@@ -21,35 +20,21 @@ const defaultSystem = `You are Fender, a coding agent. Work autonomously within 
 
 // buildAgent wires every subsystem from fender.toml (ticket-08 spec §5).
 // modeOverride nil → the config's mode; approver nil → ASK is denied.
-func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd, reason string) (bool, error)) (*agent.Agent, error) {
-	var (
-		reg *provider.Registry
-		err error
-	)
-	if cfgPath != "" {
-		reg, err = provider.Load(cfgPath)
-	} else {
-		reg, err = provider.LoadDefault()
-	}
+func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(context.Context, string, string) (bool, error)) (*agent.Agent, error) {
+	reg, err := provider.LoadSelected(cfgPath)
 	if err != nil {
 		return nil, err
 	}
-	llm, ok := reg.Default()
+	primary, ok := reg.Default()
 	if !ok {
 		return nil, fmt.Errorf("no provider with default_model set (see fender.toml)")
 	}
-
-	mode := guardrail.Balanced
-	subagentProvider := ""
-	if cfgPath != "" {
-		var cfg provider.Config
-		if _, err := toml.DecodeFile(cfgPath, &cfg); err == nil {
-			if cfg.Mode != "" {
-				mode = guardrail.Mode(cfg.Mode)
-			}
-			subagentProvider = cfg.Subagent // D48: default subagent provider
-		}
+	llm, err := reg.WithFallback(primary)
+	if err != nil {
+		return nil, err
 	}
+
+	mode := configuredMode(cfgPath)
 	if modeOverride != nil {
 		mode = *modeOverride
 	}
@@ -90,18 +75,22 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 
 	a := agent.NewAgent(llm, regTools)
 	a.System = defaultSystem
-	a.DefaultSubagent = subagentProvider
 	a.Mem = mem
 	a.Skills = regSkills
 	a.Ctx = ctxpkg.New()
-	a.Resolver = func(name string) (agent.LLM, error) {
-		c, ok := reg.Client(name)
-		if !ok {
-			return nil, fmt.Errorf("unknown provider %q", name)
-		}
-		return c, nil
-	}
 	return a, nil
+}
+
+// configuredMode reports the mode from the provider package's canonical
+// config selection, keeping the dashboard and tool guardrail aligned.
+func configuredMode(cfgPath string) guardrail.Mode {
+	cfg, err := provider.LoadConfig(cfgPath)
+	if err == nil {
+		if mode, parseErr := guardrail.ParseMode(cfg.Mode); parseErr == nil {
+			return mode
+		}
+	}
+	return guardrail.Balanced
 }
 
 // intelRefreshTool lets the agent refresh the code index when it senses

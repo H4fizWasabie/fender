@@ -1,8 +1,8 @@
 # Fender — Decision Log
 
-Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session — decisions only, no implementation yet.
+Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; later entries explicitly supersede earlier ones.
 
-## Status: In discussion (context management pending)
+## Status: Implemented through D51
 
 ---
 
@@ -70,7 +70,12 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D49 | **`ask` tool — the user's subagent model (ticket 17).** ONE agent; a "subagent" is a single API call to another provider/key — no nested loop, no tools, no memory, nothing persists. `ask {prompt, provider?}` — provider empty = config `subagent =` default, else parent's model; multiple ask calls in one response run in parallel (D48 dispatch). The full nested-agent `delegate` stays for research subtasks; `ask` is the pure model. Live-verified: parent zen (account 1) → two parallel asks to zen-2 (account 2 key) → OPINION-A OPINION-B. |
 
+| D50 | **Single-main-agent reconciliation; D7/D8/D47–D49 superseded where they conflict.** Fender has one persistent **main agent** and one `Agent` implementation. `delegate` synchronously creates one **ephemeral child agent** for a bounded task: same loop/provider fallback chain/guardrailed tools, fresh conversation + artifact context + memory handle, canonical project memory grounding, no `delegate` tool (therefore no grandchildren), no child session/consolidation, result returned then child discarded. Tool calls execute sequentially in model order; parallel dispatch is removed and requires a new measured decision to return. The one-shot `ask` tool and provider-selectable child identity are removed. A top-level `fallback = "provider-name"` instead names a separately configured backup provider/key: a failed non-streaming request retries once; streaming retries only before any text or thinking is emitted; cancellation and partial streams never retry. Fallback is transport resilience for the same agent, never an agent or delegation mechanism. Delivered with terminology in `CONTEXT.md`. |
+
+| D51 | **UI/UX redesign: Centered Docket workbench.** Fender opens a fresh session by default in browser and terminal; resuming is always explicit (`--resume <id|latest>` in the CLI, an on-demand session index in the browser). The browser is an Operate surface, not a source editor: a compact left rail holds New session, Resume, repository, model, and permission context; one central task docket owns the conversation and composer; a right evidence lane is absent until real observer events attach activity slips. Completion renders only an explicit terminal runtime status and final reply—never inferred file counts, test results, or proof. Dashboard sessions keep one stable ID across turns; tool, approval, and completion events persist with them so reload and resume reconstruct evidence from runtime facts. HTTP APIs expose current state, terminal truth, durable events, persistence errors, and session summaries; strict/balanced shell approvals use an explicit pending hold with approve/deny actions. Plain embedded HTML/CSS/JS only; no framework or dependency. Visual language: warm technical stock, graphite rules, safety orange for action/attention, verification green only for proven completion, clipped sheets, flat matte surfaces, authored line icons, and progressive disclosure. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)
-- Q5: **resolved** — conversation/tool-loop context methodology = mino artifact engineering (D31). **No open design topics remain.**
+- Q5: **resolved** — conversation/tool-loop context methodology = mino artifact engineering (D31).
+- Browser + terminal UI/UX redesign: resolved by D51.
