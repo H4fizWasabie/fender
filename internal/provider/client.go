@@ -64,6 +64,19 @@ type Choice struct {
 type Usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
+	CacheReadTokens  int `json:"prompt_cache_hit_tokens,omitempty"`        // deepseek/openrouter style
+	Details          struct {
+		CachedTokens int `json:"cached_tokens,omitempty"` // openai style
+	} `json:"prompt_tokens_details,omitempty"`
+}
+
+// Cached returns the prompt tokens served from the provider cache,
+// whichever wire format the provider used (D56).
+func (u Usage) Cached() int {
+	if u.CacheReadTokens > 0 {
+		return u.CacheReadTokens
+	}
+	return u.Details.CachedTokens
 }
 
 // Client is one OpenAI-compatible endpoint. Not safe for concurrent use

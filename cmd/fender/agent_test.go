@@ -30,8 +30,8 @@ default_model = "m1"
 	if a.System == "" {
 		t.Fatal("system prompt missing")
 	}
-	if a.Mem == nil || a.Skills == nil || a.Ctx == nil {
-		t.Fatal("wiring incomplete: Mem/Skills/Ctx must be set")
+	if a.Mem == nil || a.Skills == nil || a.Meter == nil {
+		t.Fatal("wiring incomplete: Mem/Skills/Meter must be set")
 	}
 }
 

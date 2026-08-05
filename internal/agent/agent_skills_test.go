@@ -32,11 +32,20 @@ func TestSkillsComposeSystem(t *testing.T) {
 	if !strings.Contains(sys, "laziest") {
 		t.Fatalf("ponytail core missing: %q", sys[:200])
 	}
-	if !strings.Contains(sys, "# Test-Driven Development") {
-		t.Fatalf("matched skill body missing: %q", sys[:400])
-	}
 	if !strings.Contains(sys, "- tdd:") {
 		t.Fatalf("descriptions catalog missing: %q", sys[:400])
+	}
+	// D56 (cache-correct): matched skill bodies ride in an APPENDED message
+	// before the user turn — never in the system prompt.
+	var all string
+	for _, m := range req.Messages {
+		all += m.Content
+	}
+	if !strings.Contains(all, "# Test-Driven Development") {
+		t.Fatalf("matched skill body missing: %q", all[:400])
+	}
+	if strings.Contains(sys, "# Test-Driven Development") {
+		t.Fatal("skill body leaked into the system prompt (cache hazard)")
 	}
 	// ponytail is always-loaded, never a matched marker
 	if strings.Contains(sys, "[skill loaded: ponytail]") {

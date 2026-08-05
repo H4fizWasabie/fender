@@ -47,9 +47,6 @@ func (a *Agent) delegateTool() tools.Tool {
 					a.Observer(e)
 				}
 			}
-			if a.Ctx != nil {
-				child.Ctx = a.Ctx.Child() // D38: isolated artifacts + catalog
-			}
 			res := child.Run(ctx, []provider.Message{{Role: "user", Content: prompt}})
 			if res.Status == "complete" || res.Status == "blocked" {
 				return fmt.Sprintf("[delegate %s] %s", res.Status, res.Reply), nil

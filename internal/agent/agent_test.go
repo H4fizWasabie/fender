@@ -9,7 +9,6 @@ import (
 	"sync"
 	"testing"
 
-	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -336,7 +335,9 @@ func TestRunSystemPrompt(t *testing.T) {
 	}
 }
 
-func TestRunCompactsLargeToolOutput(t *testing.T) {
+func TestRunKeepsLargeOutputInline(t *testing.T) {
+	// D56 (pi-style): tool output stays inline — no artifact pointers,
+	// the model sees the real result, no re-read round trips.
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
@@ -344,18 +345,16 @@ func TestRunCompactsLargeToolOutput(t *testing.T) {
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
-	a.Ctx = ctxpkg.New()
-	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "run it"}})
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
 	got := lastToolResult(t, f)
-	if !strings.Contains(got, "[artifact:") {
-		t.Fatalf("tool result not compacted: %.100q", got)
+	if strings.Contains(got, "[artifact:") {
+		t.Fatalf("artifact pointer must not exist anymore: %.80q", got)
 	}
-	if strings.Contains(got, strings.Repeat("y", 17000)) {
-		t.Fatal("raw 9K output leaked inline")
+	if !strings.Contains(got, strings.Repeat("y", 17000)) {
+		t.Fatal("full output must be inline")
 	}
 }
 
@@ -371,8 +370,6 @@ func TestRunReadFileStaysInline(t *testing.T) {
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
-	a.Ctx = ctxpkg.New()
-	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
 	res := a.Run(context.Background(), nil)
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
@@ -382,7 +379,7 @@ func TestRunReadFileStaysInline(t *testing.T) {
 	}
 }
 
-func TestRunDedupReplaysPointer(t *testing.T) {
+func TestRunDedupReplaysOutputInline(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
@@ -391,35 +388,32 @@ func TestRunDedupReplaysPointer(t *testing.T) {
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
-	a.Ctx = ctxpkg.New()
-	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
 	res := a.Run(context.Background(), nil)
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
 	found := false
 	for _, m := range f.last().Messages {
-		if m.Role == "tool" && strings.HasPrefix(m.Content, "[already executed] [artifact:") {
+		if m.Role == "tool" && strings.HasPrefix(m.Content, "[already executed]") && !strings.Contains(m.Content, "[artifact:") {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("dedup replay lost the artifact pointer")
+		t.Fatal("dedup replay must show the real output, no artifact pointers")
 	}
 }
 
-func TestRunCompactsLargeUserInput(t *testing.T) {
+func TestRunKeepsLargeUserInputInline(t *testing.T) {
+	// D56: the user's full input reaches the model — no HEAD/TAIL.
 	f := &fakeLLM{steps: []*provider.Response{completeReply("complete", "ok")}}
 	a, _ := newTestAgent(t, f)
-	a.Ctx = ctxpkg.New()
-	a.Ctx.Root = filepath.Join(t.TempDir(), "run")
 	big := strings.Repeat("t", 30000)
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: big}})
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	if msg := f.last().Messages[0]; !strings.Contains(msg.Content, "large user input") {
-		t.Fatalf("task not compacted: %.100q", msg.Content)
+	if msg := f.last().Messages[0]; !strings.Contains(msg.Content, strings.Repeat("t", 30000)) {
+		t.Fatalf("task truncated: %.100q", msg.Content)
 	}
 }
 

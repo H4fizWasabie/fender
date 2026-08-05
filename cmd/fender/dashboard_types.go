@@ -58,6 +58,7 @@ type dashSnapshot struct {
 	SessionID        string            `json:"sessionId"`
 	Started          string            `json:"started"`
 	Status           string            `json:"status"`
+	Meter            map[string]any    `json:"meter,omitempty"` // D56: CH rate, usage %, window
 	Terminal         bool              `json:"terminal"`
 	Busy             bool              `json:"busy"`
 	Workspace        string            `json:"workspace"`

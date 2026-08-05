@@ -2,11 +2,9 @@ package agent
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
 )
@@ -80,30 +78,16 @@ func TestDelegateChildGetsOwnContext(t *testing.T) {
 		completeReply("complete", "parent done"),
 	}}
 	a, _ := newTestAgent(t, llm)
-	a.Ctx = ctxpkg.New()
-	a.Ctx.Root = filepath.Join(t.TempDir(), "parent-run")
 	res := a.Run(context.Background(), nil)
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	pointer := ""
 	for _, req := range llm.all() {
 		for _, msg := range req.Messages {
 			if strings.Contains(msg.Content, "[artifact:") {
-				pointer = msg.Content
+				t.Fatal("artifact pointers must not exist (D56)")
 			}
 		}
-	}
-	if pointer == "" {
-		t.Fatal("child never compacted")
-	}
-	_, after, _ := strings.Cut(pointer, " at ")
-	path, _, _ := strings.Cut(after, ";")
-	if !strings.HasPrefix(path, filepath.Dir(a.Ctx.Root)+"/") || strings.HasPrefix(path, a.Ctx.Root+"/") {
-		t.Fatalf("child artifact not isolated: %q", path)
-	}
-	if strings.Contains(a.Ctx.Catalog(), path) {
-		t.Fatal("child artifact recorded in parent catalog")
 	}
 }
 

@@ -339,3 +339,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Context knobs (D55): inline 8K→16K, history 5→20 turns, budget 100K→200K — minos Telegram constraints dropped for coding-agent needs; configurable via inline_limit/history_turns/context_chars
+
+### Changed
+- pi-style context (D56): artifact machinery removed (inline everything), real token meter (CH/usage/window), cache-correct skill injection, /compact + near-limit warning

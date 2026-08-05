@@ -84,6 +84,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D55 | **Coding-agent context knobs (dropping mino parity).** mino's 8K inline / 5-turn history / 100K budget were Telegram-bot constraints — Fender is a coding agent with a big-context model. Defaults raised: inline 8K→16K, history 5→20 turns, budget 100K→200K. Configurable per fender.toml: `inline_limit`, `history_turns`, `context_chars`. The artifact machinery (D31) is unchanged — thresholds only. |
 
+| D56 | **pi-style context (ticket 19) — the artifact machinery is GONE.** Deleted: CompactOutput/HEAD-TAIL/artifact catalog/isolate (D31's thrift, mino-Telegram inheritance). Tool outputs stay inline; read_file never compacted; shell 8MiB sanity cap stays. **Real token accounting**: provider.Meter accumulates actual usage (prompt/completion/cache tokens, both wire formats); per-provider `context_window` + `reserve_tokens` config; meter exposed via /api/state for the UI (rendering = Codex's job). **Cache-correct skills**: matched skill bodies now ride in an appended message before the user turn, never the system prompt — the prefix stays byte-stable so provider prefix-cache hits stay high (pi's CH). **Manual compaction**: REPL `/compact` summarizes older turns with the LLM (D43 machinery); near-limit warning in the REPL meter line. UI meter (CH x.x% y%/window) deferred to Codex's UI pass. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

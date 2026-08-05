@@ -8,7 +8,6 @@ import (
 
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/codeintel"
-	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -37,6 +36,13 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	mode := configuredMode(cfgPath)
 	if modeOverride != nil {
 		mode = *modeOverride
+	}
+	// D54/D56: loop cap + context window from the canonical config
+	var maxIterations, ctxWindow, reserveTokens int
+	if cfg, err := provider.LoadConfig(cfgPath); err == nil {
+		maxIterations = cfg.MaxIterations
+		ctxWindow = cfg.ContextWindow
+		reserveTokens = cfg.ReserveTokens
 	}
 
 	home, _ := os.UserHomeDir()
@@ -77,7 +83,8 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	a.System = defaultSystem
 	a.Mem = mem
 	a.Skills = regSkills
-	a.Ctx = ctxpkg.New()
+	a.MaxIter = maxIterations // D54: configurable loop cap (0 = 30)
+	a.Meter = &provider.Meter{Window: ctxWindow, Reserve: reserveTokens} // D56
 	return a, nil
 }
 

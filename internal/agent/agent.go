@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/skills"
@@ -55,7 +54,7 @@ type Agent struct {
 	System     string
 	MaxIter    int              // 0 -> defaultMaxIter
 	MaxSubIter int              // 0 -> defaultMaxSubIter
-	Ctx        *ctxpkg.Manager  // D31 artifact layer; nil = ticket-03 behavior
+	Meter      *provider.Meter // real token accounting (D56); nil-safe
 	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
 	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
 	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
@@ -100,16 +99,25 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			system = core.Body + "\n\n" + system // D30: always-loaded discipline
 		}
 		system = a.Skills.Descriptions() + "\n" + system
-		for _, s := range a.Skills.Match(lastUserContent(msgs)) {
-			system += "\n[skill loaded: " + s.Name + "]\n" + s.Body
-		}
-	}
-	if a.Ctx != nil {
-		a.Ctx.Cleanup(ctxpkg.SweepAge)
-		msgs = a.Ctx.For(system, msgs)
 	}
 	if system != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
 		msgs = append([]provider.Message{{Role: "system", Content: system}}, msgs...)
+	}
+	if a.Skills != nil {
+		// D56 (cache-correct): matched skill bodies are APPENDED after the
+		// real system message, right before the current user turn — never
+		// injected into the system prompt, which must stay byte-stable so
+		// the provider prefix cache keeps hitting.
+		if matched := a.Skills.Match(lastUserContent(msgs)); len(matched) > 0 {
+			var sb strings.Builder
+			for _, s := range matched {
+				sb.WriteString("\n[skill loaded: " + s.Name + "]\n" + s.Body)
+			}
+			if len(msgs) > 1 {
+				msgs = append(msgs[:len(msgs)-1], append(
+					[]provider.Message{{Role: "user", Content: sb.String()}}, msgs[len(msgs)-1])...)
+			}
+		}
 	}
 	maxIter := a.MaxIter
 	if maxIter == 0 {
@@ -128,6 +136,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		resp, err := a.chat(ctx, provider.Request{Messages: msgs, Tools: schemas})
 		if err != nil {
 			return a.finish(&Result{Status: "error", Reply: fmt.Sprintf("(error: %v)", err), Iterations: i})
+		}
+		if a.Meter != nil {
+			a.Meter.Record(resp.Usage) // D56: real token accounting per turn
 		}
 		if len(resp.Choices) == 0 ||
 			(resp.Choices[0].Message.Content == "" && len(resp.Choices[0].Message.ToolCalls) == 0) {
@@ -201,9 +212,6 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error", Detail: eventDetail(err.Error())})
 				}
 				continue
-			}
-			if a.Ctx != nil {
-				out = a.Ctx.CompactOutput(tc.Function.Name, out)
 			}
 			dedup[key] = out
 			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: out})

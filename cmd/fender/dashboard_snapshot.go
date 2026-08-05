@@ -29,6 +29,9 @@ func (d *dashState) snapshot() dashSnapshot {
 	}); ok {
 		s.Provider, s.Model = named.Name(), named.Model()
 	}
+	if d.agent.Meter != nil {
+		s.Meter = d.agent.Meter.Summary() // D56: real token usage (CH/percent/window)
+	}
 	for _, m := range d.history {
 		if (m.Role == "user" || m.Role == "assistant") && strings.TrimSpace(m.Content) != "" {
 			s.Messages = append(s.Messages, dashMessage{Role: m.Role, Content: m.Content})

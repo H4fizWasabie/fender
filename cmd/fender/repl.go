@@ -127,6 +127,14 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 			fmt.Fprintln(out, res.Reply) // answer arrived via complete_task args, not deltas
 		}
 		streamed = false
+		if state.agent.Meter != nil {
+			m := state.agent.Meter.Summary()
+			fmt.Fprintf(out, "\x1b[2m[CH%.1f%% %.1f%%/%s", m["cache_hit_rate"], m["usage_percent"], formatWindow(m["window"].(int)))
+			if near, _ := m["near_limit"].(bool); near {
+				fmt.Fprint(out, " ⚠ near limit — /compact or /quit to a new session")
+			}
+			fmt.Fprintln(out, "]\x1b[0m")
+		}
 		if res.Status == "complete" || res.Status == "blocked" {
 			state.history = append(state.history, provider.Message{Role: "assistant", Content: res.Reply})
 		}
@@ -174,7 +182,7 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 	case "/quit":
 		return true, nil
 	case "/help":
-		fmt.Fprintln(out, "commands: /quit /model <provider> /mode <strict|balanced|yolo> /thinking <off|low|medium|high> /skills /help")
+		fmt.Fprintln(out, "commands: /quit /model <provider> /mode <strict|balanced|yolo> /thinking <off|low|medium|high> /compact /skills /help")
 		return false, nil
 	case "/model":
 		if len(parts) < 2 {
@@ -241,6 +249,16 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 		st.thinking = level
 		fmt.Fprintf(out, "thinking -> %s\n", parts[1])
 		return false, nil
+	case "/compact":
+		if st.agent == nil {
+			return false, fmt.Errorf("no agent built")
+		}
+		n, err := compactHistory(st)
+		if err != nil {
+			return false, err
+		}
+		fmt.Fprintf(out, "compacted %d message(s) into a summary\n", n)
+		return false, nil
 	case "/skills":
 		if st.skills == nil {
 			return false, fmt.Errorf("skills registry unavailable")
@@ -297,3 +315,58 @@ func renderEvent(out io.Writer, e agent.Event, showThinking bool) {
 		fmt.Fprintf(out, "\n%s<%s>\x1b[0m\n", color, e.Status)
 	}
 }
+
+func formatWindow(w int) string {
+	switch {
+	case w >= 1_000_000:
+		return fmt.Sprintf("%.1fM", float64(w)/1_000_000)
+	case w >= 1000:
+		return fmt.Sprintf("%.0fK", float64(w)/1000)
+	default:
+		return fmt.Sprint(w)
+	}
+}
+
+// compactHistory summarizes everything but the last 8 messages and replaces
+// it with one summary message (pi-style manual compaction, D56). The
+// summarizer reuses the consolidation prompt.
+func compactHistory(st *replState) (int, error) {
+	const keep = 8
+	if len(st.history) <= keep {
+		return 0, nil
+	}
+	old := st.history[:len(st.history)-keep]
+	tail := st.history[len(st.history)-keep:]
+	llm, ok := st.agent.LLM.(agentLLM)
+	if !ok {
+		return 0, fmt.Errorf("current LLM cannot summarize")
+	}
+	var sb strings.Builder
+	for _, m := range old {
+		if m.Role == "user" || m.Role == "assistant" {
+			fmt.Fprintf(&sb, "%s: %s\n", m.Role, truncate(m.Content, 400))
+		}
+	}
+	resp, err := llm.Chat(context.Background(), provider.Request{
+		Messages: []provider.Message{{Role: "user", Content: fmt.Sprintf(compactPrompt, sb.String())}},
+	})
+	if err != nil {
+		return 0, err
+	}
+	summary := ""
+	if len(resp.Choices) > 0 {
+		summary = resp.Choices[0].Message.Content
+	}
+	if summary == "" {
+		return 0, fmt.Errorf("empty summary")
+	}
+	st.history = append([]provider.Message{
+		{Role: "system", Content: "[compacted summary of earlier conversation]\n" + summary},
+	}, tail...)
+	return len(old), nil
+}
+
+const compactPrompt = `Summarize the earlier conversation of a coding-agent session into a compact briefing for the model to continue from. Keep: the task, decisions made, files touched, and what remains to do. Reply with plain prose, 200 words max.
+
+Earlier conversation:
+%s`
