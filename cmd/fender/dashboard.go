@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/H4fizWasabie/fender/internal/agent"
@@ -152,6 +154,13 @@ func dashboard(out io.Writer, cfgPath string) error {
 		return err
 	}
 	addr := "127.0.0.1:8787"
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		if strings.Contains(err.Error(), "in use") {
+			return fmt.Errorf("port 8787 is already in use — is another fender dashboard running? (kill it with: pkill -f 'fender dashboard')")
+		}
+		return err
+	}
 	fmt.Fprintf(out, "fender dashboard at http://%s (ctrl-c to stop)\n", addr)
-	return http.ListenAndServe(addr, mux)
+	return http.Serve(ln, mux)
 }

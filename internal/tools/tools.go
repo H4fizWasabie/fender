@@ -66,11 +66,17 @@ func (r *Registry) Schemas() []provider.ToolDef {
 	return out
 }
 
-// New returns the standard v1 registry.
-func New(projectDir string, shell ShellConfig, searcher Searcher) *Registry {
+// New returns the standard v1 registry. ruleLoader (nil-safe) returns
+// nested-AGENTS.md rules for a target directory (D46) — prepended to
+// read/edit outputs so the model follows directory-scoped conventions.
+func New(projectDir string, shell ShellConfig, searcher Searcher, ruleLoader ...func(dir string) string) *Registry {
+	var loader func(dir string) string
+	if len(ruleLoader) > 0 {
+		loader = ruleLoader[0]
+	}
 	r := &Registry{tools: make(map[string]Tool)}
-	r.Add(readTool(projectDir))
-	r.Add(editTool(projectDir))
+	r.Add(readTool(projectDir, loader))
+	r.Add(editTool(projectDir, loader))
 	r.Add(shellTool(shell))
 	r.Add(searchTool(projectDir, searcher))
 	return r

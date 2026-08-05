@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -12,7 +13,11 @@ import (
 // for), so this cap is the only bound on inline size — it stays.
 const readCap = 1 << 20 // 1 MiB
 
-func readTool(projectDir string) Tool {
+func readTool(projectDir string, ruleLoader ...func(dir string) string) Tool {
+	var loader func(dir string) string
+	if len(ruleLoader) > 0 {
+		loader = ruleLoader[0]
+	}
 	return Tool{
 		Name:        "read_file",
 		Description: "Read a file inside the project directory. Optional 1-based offset and limit select a line range; the full file is read when omitted.",
@@ -31,15 +36,19 @@ func readTool(projectDir string) Tool {
 			if err != nil {
 				return "", err
 			}
+			var rules string
+			if loader != nil {
+				rules = loader(filepath.Dir(full)) // D46: nested AGENTS.md
+			}
 			data, err := os.ReadFile(full)
 			if err != nil {
 				return "", err
 			}
 			if len(data) > readCap {
 				data = data[:readCap]
-				return string(data) + fmt.Sprintf("\n... (truncated at %d bytes)\n", readCap), nil
+				return rules + string(data) + fmt.Sprintf("\n... (truncated at %d bytes)\n", readCap), nil
 			}
-			text := string(data)
+			text := rules + string(data)
 			off, hasOff := intArg(args, "offset")
 			if !hasOff {
 				return text, nil

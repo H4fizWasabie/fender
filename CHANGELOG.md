@@ -254,3 +254,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Code-intel is automatic (D45): session-build incremental refresh, always-symbol-aware search, agent-callable intel_refresh tool, fender init builds index + MAP.md
+
+### Added
+- Ticket 15: repo gaps — nested AGENTS.md (read/edit prepend dir-scoped rules), dashboard port-conflict message, README, MIT LICENSE, GitHub Actions CI, v0.1.0 tag, repo made public

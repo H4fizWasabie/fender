@@ -62,6 +62,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D45 | **Code-intel is automatic (ticket 14b).** buildAgent opens the codeintel store and runs one incremental refresh at every session build (stamp walk — cheap; the loop itself stays refresh-free per spec decision 8); the search tool is always symbol-aware (no fallback to the dumb walker); `intel_refresh` tool lets the agent re-index when it senses drift (spec decision 8, now delivered); `fender init` builds the index + MAP.md once. |
 
+| D46 | **Repo gaps closed (ticket 15).** Nested AGENTS.md wired: read/edit tools prepend directory-scoped rules via a nil-safe RuleLoader (memory.NestedRules walks up from the target dir; root rules excluded — already loaded). Dashboard port-conflict detection (clear error naming the stale process). README, MIT LICENSE, GitHub Actions CI (build/vet/test + changelog check), v0.1.0 tag. **Repo made public.** |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

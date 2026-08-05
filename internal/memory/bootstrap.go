@@ -55,6 +55,40 @@ func (m *Memory) pruneWorking() {
 	}
 }
 
+// NestedRules returns provenance-marked AGENTS.md content for directories
+// between targetDir and the project root (root rules are already loaded by
+// Bootstrap). Empty when none. The dir-aware Detect seam, wired (D46).
+func (m *Memory) NestedRules(targetDir string) string {
+	abs, err := filepath.Abs(targetDir)
+	if err != nil {
+		return ""
+	}
+	var sections []string
+	dir := abs
+	for {
+		if p := filepath.Join(dir, "AGENTS.md"); exists(p) && !sameFile(p, filepath.Join(m.root, "AGENTS.md")) {
+			if content := readQuiet(p); content != "" {
+				sections = append(sections, fmt.Sprintf("<<AGENTS.md (nested): %s>>\n%s", p, strings.TrimSpace(content)))
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	if len(sections) == 0 {
+		return ""
+	}
+	return "\n" + strings.Join(sections, "\n")
+}
+
+func sameFile(a, b string) bool {
+	ai, err1 := os.Stat(a)
+	bi, err2 := os.Stat(b)
+	return err1 == nil && err2 == nil && os.SameFile(ai, bi)
+}
+
 // Working lists surviving working files: "<basename>: <path> (<age>)".
 func (m *Memory) Working() []string {
 	dir := filepath.Join(m.root, ".fender", "memory", "working")

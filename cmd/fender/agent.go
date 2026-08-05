@@ -68,12 +68,13 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 		searcher = tools.DefaultSearcher(".")
 	}
 
+	mem := memory.New(".")
 	regTools := tools.New(".", tools.ShellConfig{
 		Mode:       mode,
 		ProjectDir: ".",
 		Audit:      audit,
 		Approver:   approver,
-	}, searcher)
+	}, searcher, mem.NestedRules) // D46: nested AGENTS.md on read/edit
 
 	base, err := skills.Bundled()
 	if err != nil {
@@ -85,7 +86,7 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 
 	a := agent.NewAgent(llm, regTools)
 	a.System = defaultSystem
-	a.Mem = memory.New(".")
+	a.Mem = mem
 	a.Skills = regSkills
 	a.Ctx = ctxpkg.New()
 	a.Resolver = func(name string) (agent.LLM, error) {

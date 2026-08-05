@@ -4,10 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-func editTool(projectDir string) Tool {
+func editTool(projectDir string, ruleLoader ...func(dir string) string) Tool {
+	var loader func(dir string) string
+	if len(ruleLoader) > 0 {
+		loader = ruleLoader[0]
+	}
 	return Tool{
 		Name:        "edit_file",
 		Description: "Replace a unique occurrence of old_text with new_text in a file inside the project directory.",
@@ -52,7 +57,11 @@ func editTool(projectDir string) Tool {
 			if err := os.WriteFile(full, []byte(out), info.Mode().Perm()); err != nil {
 				return "", err
 			}
-			return fmt.Sprintf("edited %s (%d -> %d bytes)", path, len(content), len(out)), nil
+			var rules string
+			if loader != nil {
+				rules = loader(filepath.Dir(full)) // D46: nested AGENTS.md
+			}
+			return rules + fmt.Sprintf("edited %s (%d -> %d bytes)", path, len(content), len(out)), nil
 		},
 	}
 }
