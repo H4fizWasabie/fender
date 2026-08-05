@@ -42,6 +42,7 @@ type Streamer interface {
 const (
 	defaultMaxIter    = 30
 	defaultMaxSubIter = 6
+	maxEventDetail    = 8_000
 	orientationPrompt = `(orientation turn — harness-enforced) Stop and orient before acting again. Reply with exactly four points: 1) what you know, 2) what is uncertain, 3) your hypothesis for the failures so far, 4) the single next distinct action. Do not repeat a failed or already-executed call.`
 )
 
@@ -174,7 +175,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
 				executedKey = key // repeat detection: cached calls are not progress
 				if a.Observer != nil {
-					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached"})
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "cached", Detail: eventDetail(out)})
 				}
 				continue
 			}
@@ -183,7 +184,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 				errors++
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				if a.Observer != nil {
-					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error"})
+					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error", Detail: eventDetail(err.Error())})
 				}
 				continue
 			}
@@ -195,7 +196,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			progress = true
 			executedKey = key
 			if a.Observer != nil {
-				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok"})
+				a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "ok", Detail: eventDetail(out)})
 			}
 		}
 
@@ -223,6 +224,16 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	}
 
 	return a.finish(&Result{Status: "stalled", Reply: "(stopped: max iterations reached)", Iterations: maxIter})
+}
+
+func eventDetail(out string) string {
+	runes := []rune(out)
+	if len(runes) <= maxEventDetail {
+		return out
+	}
+	const marker = "\n… evidence preview truncated …\n"
+	half := (maxEventDetail - len([]rune(marker))) / 2
+	return string(runes[:half]) + marker + string(runes[len(runes)-half:])
 }
 
 // lastUserContent returns the most recent user-role message content.

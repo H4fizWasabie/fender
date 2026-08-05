@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/codeintel"
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
@@ -22,15 +21,7 @@ const defaultSystem = `You are Fender, a coding agent. Work autonomously within 
 // buildAgent wires every subsystem from fender.toml (ticket-08 spec §5).
 // modeOverride nil → the config's mode; approver nil → ASK is denied.
 func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(context.Context, string, string) (bool, error)) (*agent.Agent, error) {
-	var (
-		reg *provider.Registry
-		err error
-	)
-	if cfgPath != "" {
-		reg, err = provider.Load(cfgPath)
-	} else {
-		reg, err = provider.LoadDefault()
-	}
+	reg, err := provider.LoadSelected(cfgPath)
 	if err != nil {
 		return nil, err
 	}
@@ -90,25 +81,12 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	return a, nil
 }
 
-// configuredMode mirrors provider.LoadDefault's path order so the guardrail
-// and dashboard report the same effective mode even when --config is omitted.
+// configuredMode reports the mode from the provider package's canonical
+// config selection, keeping the dashboard and tool guardrail aligned.
 func configuredMode(cfgPath string) guardrail.Mode {
-	paths := []string{cfgPath}
-	if cfgPath == "" {
-		paths = []string{"fender.toml"}
-		if home, err := os.UserHomeDir(); err == nil {
-			paths = append(paths, filepath.Join(home, ".fender", "fender.toml"))
-		}
-	}
-	for _, path := range paths {
-		if path == "" {
-			continue
-		}
-		var cfg provider.Config
-		if _, err := toml.DecodeFile(path, &cfg); err != nil {
-			continue
-		}
-		if mode, err := guardrail.ParseMode(cfg.Mode); err == nil {
+	cfg, err := provider.LoadConfig(cfgPath)
+	if err == nil {
+		if mode, parseErr := guardrail.ParseMode(cfg.Mode); parseErr == nil {
 			return mode
 		}
 	}

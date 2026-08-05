@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/provider"
 )
 
@@ -21,6 +22,7 @@ type sessionFile struct {
 	Updated      string             `json:"updated,omitempty"`
 	Status       string             `json:"status,omitempty"`
 	Messages     []provider.Message `json:"messages"`
+	Events       []agent.Event      `json:"events,omitempty"`
 	Consolidated bool               `json:"consolidated,omitempty"` // D43
 }
 

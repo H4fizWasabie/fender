@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -54,6 +55,18 @@ func (d *dashFakeLLM) Chat(ctx context.Context, req provider.Request) (*provider
 			Function: provider.ToolFunction{Name: "complete_task", Arguments: `{"status":"complete","reply":"hi there"}`},
 		}},
 	}}}}, nil
+}
+
+type dashFinalSaveFailureLLM struct{}
+
+func (d *dashFinalSaveFailureLLM) Chat(ctx context.Context, req provider.Request) (*provider.Response, error) {
+	if err := os.RemoveAll(".fender/sessions"); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(".fender/sessions", []byte("not a directory"), 0600); err != nil {
+		return nil, err
+	}
+	return (&dashFakeLLM{}).Chat(ctx, req)
 }
 
 func TestDashStateRun(t *testing.T) {
@@ -212,6 +225,126 @@ default_model = "m1"
 	resolved := <-events
 	if resolved.Status != "approved" {
 		t.Fatalf("resolved event = %+v", resolved)
+	}
+}
+
+func TestDashboardSnapshotReportsTerminalTruth(t *testing.T) {
+	chdir(t, t.TempDir())
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux, err := newDashboardMux(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	d.session.Status = "working"
+	var working map[string]any
+	getJSON(t, srv.URL+"/api/state", &working)
+	if terminal, ok := working["terminal"].(bool); !ok || terminal {
+		t.Fatalf("working snapshot terminal = %#v, want false", working["terminal"])
+	}
+
+	d.session.Status = "complete"
+	var complete map[string]any
+	getJSON(t, srv.URL+"/api/state", &complete)
+	if terminal, ok := complete["terminal"].(bool); !ok || !terminal {
+		t.Fatalf("complete snapshot terminal = %#v, want true", complete["terminal"])
+	}
+}
+
+func TestDashboardPersistsEvidenceEvents(t *testing.T) {
+	chdir(t, t.TempDir())
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := saveSession(d.session); err != nil {
+		t.Fatal(err)
+	}
+	d.broadcast(agent.Event{Kind: "tool", Text: "shell", Status: "ok", Detail: "tests passed"})
+
+	data, err := os.ReadFile(".fender/sessions/" + d.session.ID + ".json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var saved map[string]any
+	if err := json.Unmarshal(data, &saved); err != nil {
+		t.Fatal(err)
+	}
+	events, ok := saved["events"].([]any)
+	if !ok || len(events) != 1 {
+		t.Fatalf("persisted events = %#v, want one event", saved["events"])
+	}
+}
+
+func TestDashboardRunReportsInitialPersistenceFailure(t *testing.T) {
+	chdir(t, t.TempDir())
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.agent.LLM = &dashFakeLLM{}
+	if err := os.MkdirAll(".fender", 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(".fender/sessions", []byte("not a directory"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := d.run(context.Background(), "hello"); err == nil {
+		t.Fatal("run succeeded even though its working session could not be persisted")
+	}
+}
+
+func TestDashboardRunReportsFinalPersistenceFailure(t *testing.T) {
+	chdir(t, t.TempDir())
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.agent.LLM = &dashFinalSaveFailureLLM{}
+
+	status, reply, err := d.run(context.Background(), "hello")
+	if err == nil {
+		t.Fatal("run hid its final persistence failure")
+	}
+	if status != "complete" || reply != "hi there" {
+		t.Fatalf("runtime result lost on save failure: status=%q reply=%q", status, reply)
+	}
+	if d.snapshot().PersistenceError == "" {
+		t.Fatal("snapshot did not expose the persistence failure")
 	}
 }
 

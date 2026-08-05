@@ -124,8 +124,10 @@ The embedded localhost browser is the **Centered Docket** workbench (D51), an Op
 - a compact left index contains New session, explicit Resume, repository, model, and permission context;
 - one central docket owns the task composer and chronological user/main-agent record;
 - an evidence lane is absent in a fresh session and attaches slips only for real observer events (tool, child, thinking, approval, error, completion);
-- completion shows the actual runtime status and final reply, without inferring changed files, checks, or external proof;
+- tool results plus tool, approval, and completion events persist with the dashboard session; transient text and thinking streams remain live-only;
+- completion appears only when the HTTP snapshot marks an explicit terminal runtime status and carries the actual final reply, without inferring changed files, checks, or external proof;
 - a dashboard session owns one stable persisted ID across turns; new and resumed sessions rebuild clean agent state;
+- persistence failures surface through the HTTP state and request error instead of reporting an unsaved session as resumable;
 - strict/balanced shell ASK verdicts become a pending browser hold with explicit approve/deny controls;
 - responsive layouts preserve the same hierarchy by turning the session index into a drawer and placing evidence after the docket on narrow screens.
 

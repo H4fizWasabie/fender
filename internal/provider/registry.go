@@ -18,28 +18,60 @@ type Registry struct {
 }
 
 func Load(path string) (*Registry, error) {
-	var cfg Config
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
-		return nil, fmt.Errorf("config %s: %w", path, err)
+	cfg, err := decodeConfig(path)
+	if err != nil {
+		return nil, err
 	}
 	return build(cfg), nil
 }
 
 // LoadDefault tries ./fender.toml, then ~/.fender/fender.toml.
 func LoadDefault() (*Registry, error) {
-	for _, path := range []string{"fender.toml"} {
-		if _, err := os.Stat(path); err == nil {
-			return Load(path)
-		}
+	return LoadSelected("")
+}
+
+// LoadSelected loads an explicit config path, or Fender's canonical default.
+func LoadSelected(path string) (*Registry, error) {
+	selected, err := ConfigPath(path)
+	if err != nil {
+		return nil, err
 	}
-	home, err := os.UserHomeDir()
-	if err == nil {
+	return Load(selected)
+}
+
+// LoadConfig returns the selected TOML data for callers that need settings
+// outside the provider registry, without duplicating config path resolution.
+func LoadConfig(path string) (Config, error) {
+	selected, err := ConfigPath(path)
+	if err != nil {
+		return Config{}, err
+	}
+	return decodeConfig(selected)
+}
+
+// ConfigPath is the single source of truth for explicit/default config lookup.
+func ConfigPath(explicit string) (string, error) {
+	if explicit != "" {
+		return explicit, nil
+	}
+	if _, err := os.Stat("fender.toml"); err == nil {
+		return "fender.toml", nil
+	}
+	if home, err := os.UserHomeDir(); err == nil {
 		path := filepath.Join(home, ".fender", "fender.toml")
 		if _, err := os.Stat(path); err == nil {
-			return Load(path)
+			return path, nil
 		}
 	}
-	return nil, fmt.Errorf("no fender.toml found (tried ./fender.toml and ~/.fender/fender.toml)")
+	return "", fmt.Errorf("no fender.toml found (tried ./fender.toml and ~/.fender/fender.toml)")
+}
+
+func decodeConfig(path string) (Config, error) {
+	var cfg Config
+	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+		return Config{}, fmt.Errorf("config %s: %w", path, err)
+	}
+	return cfg, nil
 }
 
 func build(cfg Config) *Registry {

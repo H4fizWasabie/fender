@@ -20,17 +20,17 @@ Fender gives one persistent main agent freedom inside deterministic harness guar
 
 ## Operating Context
 
-Fender runs locally inside the current project. The browser workbench is the complete visual experience; the terminal remains a fast companion for interactive and autonomous use. A user starts a task, observes activity, responds to approvals or blockers, reviews changed files and verification evidence, and may resume an older session explicitly.
+Fender runs locally inside the current project. The browser workbench is the complete visual experience; the terminal remains a fast companion for interactive and autonomous use. A user starts a task, observes emitted activity and tool results, responds to approvals or blockers, reviews the runtime's final handoff, and may resume an older session explicitly.
 
 ## Capabilities and Constraints
 
-- Opening Fender starts a new session by default; previous sessions remain resumable through an explicit action. This confirmed behavior is not yet implemented everywhere.
-- Users inspect source, changes, tests, context, memory, skills, and evidence, but do not directly edit source code in Fender for now.
+- Opening Fender starts a new session by default; previous sessions remain resumable through an explicit action.
+- Users inspect the conversation, emitted tool and child activity, tool results, approval reasons, runtime status, and final reply. Dedicated source-diff, context, memory, and skill inspectors are deferred; Fender does not infer those facts from activity labels.
 - One persistent main agent owns the session and final outcome. `delegate` creates one synchronous ephemeral child with isolated working state and no descendants.
 - A separately configured provider/API key is fallback resilience for the same agent, never another agent.
 - Tool execution is sequential and guarded by strict, balanced, or yolo permission modes; hard refusals remain enforced in every mode.
 - The product remains a single Go binary with an embedded localhost web UI. The frontend uses plain HTML, CSS, and JavaScript; no UI framework or new dependency is assumed.
-- The current observer and HTTP APIs expose only a subset of the truthful state the redesigned workbench will require; backend surface changes must remain runtime-grounded.
+- Observer evidence for tools, approvals, and completion persists with the session and reloads through authoritative HTTP state. Transient streaming text and thinking remain live-only.
 
 ## Brand Commitments
 
@@ -40,7 +40,7 @@ The product name is Fender. Its voice is direct, calm, technically honest, and c
 
 - The implemented runtime and decisions are recorded in `DECISIONS.md`, especially D50.
 - Canonical agent terminology is recorded in `CONTEXT.md`.
-- The existing browser surface is `cmd/fender/static/index.html`, served by `cmd/fender/dashboard.go`.
+- The browser surface is `cmd/fender/static/index.html`, served by the small `cmd/fender/dashboard_*.go` modules.
 - The terminal experience is implemented in `cmd/fender/repl.go`.
 - Real session, tool, guardrail, context, memory, code-intelligence, thinking, child-agent, completion, and provider-fallback behavior exists in the repository with Go tests.
 - No logo system, illustration library, customer proof, benchmark claims, or other visual assets have been supplied; future design work must not fabricate them.

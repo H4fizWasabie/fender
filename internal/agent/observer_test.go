@@ -79,6 +79,9 @@ func TestObserverToolEvent(t *testing.T) {
 	found := false
 	for _, e := range events {
 		if e.Kind == "tool" && e.Text == "shell" {
+			if !strings.Contains(e.Detail, "hi") {
+				t.Fatalf("tool event detail = %q, want real tool output", e.Detail)
+			}
 			found = true
 		}
 	}
@@ -102,6 +105,17 @@ func TestObserverThinkingEvent(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("thinking event missing: %+v", events)
+	}
+}
+
+func TestObserverDetailIsBoundedHeadAndTail(t *testing.T) {
+	out := "HEAD" + strings.Repeat("x", maxEventDetail) + "TAIL"
+	detail := eventDetail(out)
+	if got := len([]rune(detail)); got > maxEventDetail {
+		t.Fatalf("detail length = %d, want <= %d", got, maxEventDetail)
+	}
+	if !strings.HasPrefix(detail, "HEAD") || !strings.HasSuffix(detail, "TAIL") || !strings.Contains(detail, "truncated") {
+		t.Fatalf("bounded detail lost head/tail marker: %q", detail)
 	}
 }
 

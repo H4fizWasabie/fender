@@ -170,7 +170,7 @@ components:
 
 Fender's browser visual system treats one coding task as a technical job docket: a calm sheet that gathers instruction, activity, exceptions, and the final runtime handoff. The metaphor supplies hierarchy, clipped geometry, index tabs, stamps, and inspection slips without becoming literal office decoration. It is direct, matte, and operational rather than ornamental.
 
-The browser is the complete visual expression of this system. It begins quietly with one obvious task action, reveals evidence only when the runtime emits it, and preserves deeper facts for inspection. The terminal remains a plain streaming transcript and is not a second visual expression of the docket. No raster texture, external imagery, fabricated logo, or decorative proof asset is part of the system.
+The browser is the complete visual expression of this system. It begins quietly with one obvious task action, reveals evidence only when the runtime emits it, and preserves durable tool results for inspection. Dedicated source-diff, context, memory, and skill inspectors are outside D51. The terminal remains a plain streaming transcript and is not a second visual expression of the docket. No raster texture, external imagery, fabricated logo, or decorative proof asset is part of the system.
 
 **Key Characteristics:**
 

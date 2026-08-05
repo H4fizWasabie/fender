@@ -362,9 +362,11 @@ body.has-evidence .app-shell {
 .run-status.status-complete { color: var(--green); border-color: #87a794; background: var(--green-soft); }
 .run-status.status-complete i { background: var(--green); }
 .run-status.status-blocked,
-.run-status.status-stalled { color: var(--amber); border-color: #c8a66e; background: var(--amber-soft); }
+.run-status.status-stalled,
+.run-status.status-interrupted { color: var(--amber); border-color: #c8a66e; background: var(--amber-soft); }
 .run-status.status-blocked i,
-.run-status.status-stalled i { background: var(--amber); }
+.run-status.status-stalled i,
+.run-status.status-interrupted i { background: var(--amber); }
 .run-status.status-error,
 .run-status.status-cancelled { color: var(--red); border-color: #c89790; background: var(--red-soft); }
 .run-status.status-error i,
@@ -696,6 +698,29 @@ kbd {
 }
 
 .thinking-slip details { margin-top: 10px; }
+
+.slip-disclosure { margin-top: 10px; }
+
+.slip-disclosure summary {
+  color: var(--muted);
+  cursor: pointer;
+  font: 700 0.68rem/1.2 var(--font-data);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.slip-disclosure pre {
+  margin: 9px 0 0;
+  max-height: 18rem;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  background: var(--stock-deep);
+  color: var(--graphite);
+  font: 0.72rem/1.5 var(--font-data);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .thinking-slip summary {
   margin-left: 43px;
   color: var(--muted);

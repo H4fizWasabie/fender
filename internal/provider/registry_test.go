@@ -57,6 +57,28 @@ func TestLoadMissingFileErrors(t *testing.T) {
 	}
 }
 
+func TestLoadConfigUsesCanonicalSelection(t *testing.T) {
+	dir := t.TempDir()
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.WriteFile("fender.toml", []byte("mode = \"strict\"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadConfig("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Mode != "strict" {
+		t.Fatalf("mode = %q, want strict", cfg.Mode)
+	}
+}
+
 func TestLoadInvalidTOMLErrors(t *testing.T) {
 	if _, err := Load(writeConfig(t, "not toml [")); err == nil {
 		t.Fatal("expected error for invalid toml")
