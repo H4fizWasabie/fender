@@ -1,3 +1,5 @@
 .fender/
 fender.toml
 /cmd/fender/fender
+*.log
+testout.txt

@@ -307,3 +307,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Provider `path` config (default "/v1"; OpenRouter needs "/api/v1") — fixes double-/v1 class of bugs at the config level
 - OpenRouter `reasoning` field parsed alongside `reasoning_content` (thinking display works on OpenRouter deepseek)
 - User config: OpenRouter primary (deepseek-v4-flash-0731), zen-2 fallback; verified live
+
+### Chore
+- Removed stray test log files from the repo + gitignored *.log
