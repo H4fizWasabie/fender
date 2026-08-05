@@ -329,3 +329,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - init test: isolates HOME (no global config) so the template path is exercised; the global-config path covered by the new test
+
+### Fixed
+- Conversational turns (D53): prose accepted as the answer after two nags — the model asking you a question now ends the turn instead of locking the input
+- Dashboard Stop button: abort the run anytime (AbortController cancels the agent context)

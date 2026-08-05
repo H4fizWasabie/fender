@@ -209,25 +209,28 @@ func TestRunRejectsInvalidCompletion(t *testing.T) {
 	}
 }
 
-func TestRunStallsWithoutProgress(t *testing.T) {
-	// 3 text-only iterations -> one orientation turn; 3 more -> stall.
+func TestRunAcceptsConversationalProse(t *testing.T) {
+	// D53: pure-prose turns are CHAT answers — after two nags the harness
+	// accepts the last prose instead of stalling (this is what locked the
+	// dashboard input while the model "waited" for the user).
 	f := &fakeLLM{steps: []*provider.Response{
-		textReply("thinking..."), textReply("still..."), textReply("hmm..."),
-		textReply("again..."), textReply("again2..."), textReply("again3..."),
+		textReply("Question 1: what do the PDFs look like?"),
+		textReply("Question 1: what do the PDFs look like?"),
+		textReply("Question 1: what do the PDFs look like?"),
 	}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
-	if res.Status != "stalled" {
-		t.Fatalf("status = %q (want stalled)", res.Status)
+	if res.Status != "complete" {
+		t.Fatalf("status = %q (want complete)", res.Status)
 	}
-	oriented := 0
-	for _, m := range f.last().Messages { // full history: counts injected turns
+	if res.Reply != "Question 1: what do the PDFs look like?" {
+		t.Fatalf("reply = %q", res.Reply)
+	}
+	// the conversational escape must have fired WITHOUT an orientation turn
+	for _, m := range f.last().Messages {
 		if strings.Contains(m.Content, "orientation turn") {
-			oriented++
+			t.Fatal("orientation must not fire for conversational prose")
 		}
-	}
-	if oriented != 1 {
-		t.Fatalf("orientation turns = %d (want exactly 1)", oriented)
 	}
 }
 
@@ -288,11 +291,15 @@ func TestRunOrientationOnRepeatedCall(t *testing.T) {
 }
 
 func TestRunStallsAfterOrientationOnErrors(t *testing.T) {
+	// DISTINCT failing calls (no dedup) keep growing the error counter —
+	// after orientation, 2 more errors stall the run (D52/D53 unchanged).
 	f := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_1", "read_file", `{"path":"nope.txt"}`),
-		toolReply("call_2", "read_file", `{"path":"nope.txt"}`),
-		toolReply("call_3", "read_file", `{"path":"nope.txt"}`),
-		toolReply("call_4", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_1", "read_file", `{"path":"nope1.txt"}`),
+		toolReply("call_2", "read_file", `{"path":"nope2.txt"}`),
+		toolReply("call_3", "read_file", `{"path":"nope3.txt"}`),
+		toolReply("call_4", "read_file", `{"path":"nope4.txt"}`),
+		toolReply("call_5", "read_file", `{"path":"nope5.txt"}`),
+		toolReply("call_6", "read_file", `{"path":"nope6.txt"}`),
 	}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
@@ -302,7 +309,11 @@ func TestRunStallsAfterOrientationOnErrors(t *testing.T) {
 }
 
 func TestRunMaxIter(t *testing.T) {
-	f := &fakeLLM{steps: []*provider.Response{textReply("x"), textReply("x")}}
+	// tool-error loop (distinct calls): the iteration cap still bounds it
+	f := &fakeLLM{steps: []*provider.Response{
+		toolReply("c1", "read_file", `{"path":"nope1.txt"}`),
+		toolReply("c2", "read_file", `{"path":"nope2.txt"}`),
+	}}
 	a, _ := newTestAgent(t, f)
 	a.MaxIter = 2
 	res := a.Run(context.Background(), nil)

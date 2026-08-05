@@ -1,6 +1,7 @@
 export async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
+    signal: options.signal,
     headers: {
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {}),

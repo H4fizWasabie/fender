@@ -14,6 +14,8 @@ import {
   syncMobileIndexInert,
 } from './sessions.js';
 
+let pendingAbort = null;
+
 async function submitTask(event) {
   event.preventDefault();
   const text = ui.input.value.trim();
@@ -25,15 +27,34 @@ async function submitTask(event) {
   setRunStatus('working', true);
   const sessionID = state.snapshot?.sessionId || 'ACTIVE SESSION';
   ui.stamp.textContent = state.resumed ? `RESUMED · ${sessionID}` : sessionID;
+  const controller = new AbortController();
+  pendingAbort = controller;
+  ui.stop.hidden = false;
   try {
-    await api('/api/message', { method: 'POST', body: JSON.stringify({ text }) });
+    await api('/api/message', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
     await loadSnapshot();
   } catch (error) {
-    setRunStatus('error');
-    addSlip({ kind: 'tool', title: 'Request failed', status: 'error', detail: error.message });
-    showToast(error.message, true);
+    if (error.name === 'AbortError') {
+      setRunStatus('cancelled');
+      addSlip({ kind: 'tool', title: 'Stopped by user', status: 'error' });
+    } else {
+      setRunStatus('error');
+      addSlip({ kind: 'tool', title: 'Request failed', status: 'error', detail: error.message });
+      showToast(error.message, true);
+    }
+  } finally {
+    pendingAbort = null;
+    ui.stop.hidden = true;
   }
 }
+
+ui.stop.addEventListener('click', () => {
+  if (pendingAbort) pendingAbort.abort();
+});
 
 ui.form.addEventListener('submit', submitTask);
 ui.input.addEventListener('keydown', (event) => {

@@ -78,6 +78,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D52 | **Runaway-loop fix (the 505× `go test` incident).** Shell commands are normalized for dedup (whitespace, quotes, redirects, pipes stripped — "go test ./..." ≡ "go test  ./... 2>&1 | tail"), so cosmetic variants collapse to one execution per run; **failing commands are deduped too** (the loop was re-executing failures). Thrash detection now catches obsessive re-runs via repeats; the orientation/stall path fires after 3-4 variants instead of 505. |
 
+| D53 | **Conversational turns (the locked-input bug).** Pure-prose turns are now CHAT answers: after two nags the harness accepts the last prose as the turn (status complete) instead of nagging forever — a question back to the user ends the turn so they can reply. Nag text tells the model the conversational escape explicitly. Dashboard gains a Stop button (AbortController → cancels the run context → input unlocks); stall tests updated: stalls still fire on distinct tool-error loops, prose-only ends complete. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

@@ -157,8 +157,16 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			if oriented && noProgress >= 3 {
 				return a.finish(&Result{Status: "stalled", Reply: "(stopped: repeated responses without completing the task)", Iterations: i})
 			}
+			// Conversational escape (D53): a chat turn — an answer or a
+			// question back to the user — is a completed turn. If the model
+			// still hasn't called complete_task after two nags, accept its
+			// last prose as the answer instead of nagging forever (this is
+			// what locked the dashboard input while the model "waited").
+			if noProgress >= 2 {
+				return a.finish(&Result{Status: "complete", Reply: msg.Content, Iterations: i})
+			}
 			msgs = append(msgs, provider.Message{Role: "user",
-				Content: "Your previous response contained no tool call and did not complete the task. Call the next tool, or call complete_task alone with status complete|blocked and the final reply."})
+				Content: "Your previous response was pure text and did not end the turn. If you are answering the user conversationally or asking them a question, call complete_task ALONE with status complete (or blocked if you need their input) and your reply as the final message. Otherwise call the next tool."})
 			continue
 		}
 

@@ -8,6 +8,7 @@ export const ui = {
   form: $('#taskComposer'),
   input: $('#taskInput'),
   send: $('#sendTask'),
+  stop: $('#stopTask'),
   status: $('#runStatus'),
   stamp: $('#sessionStamp'),
   evidence: $('#evidenceLane'),
