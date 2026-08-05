@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Fender pre-push: block accidental API-key commits (belt-and-suspenders —
+# GitHub secret scanning is the remote layer; this is the local one).
+# Generic patterns catch sk-or-v1 / long sk- keys; an optional local
+# blocklist at ~/.fender/blocked-keys.txt (one key per line) catches known
+# keys without ever committing them.
+set -euo pipefail
+
+patterns=(
+  'sk-or-v1-[A-Za-z0-9]{20,}'
+  'sk-[A-Za-z0-9]{32,}'
+  'OPENCODE_[A-Za-z0-9_]*_API_KEY[[:space:]]*=[[:space:]]*["'"'"']?sk-'
+  'api_key[[:space:]]*=[[:space:]]*["'"'"']sk-[A-Za-z0-9]{24,}'
+)
+
+blocklist="$HOME/.fender/blocked-keys.txt"
+declare -a extra
+if [ -f "$blocklist" ]; then
+  while IFS= read -r key; do
+    [ -n "$key" ] && extra+=("$key")
+  done < "$blocklist"
+fi
+
+fail=0
+while read -r _ local_sha _ remote_sha; do
+  [ "$local_sha" = "$remote_sha" ] && continue
+  tree_sha="${local_sha}"
+  hits=$(git grep -nE --and -e "$(IFS='|'; echo "${patterns[*]}")" "$tree_sha" -- '*.go' '*.toml' '*.json' '*.md' '*.txt' '*.yaml' '*.yml' 2>/dev/null | head -8 || true)
+  for key in "${extra[@]:-}"; do
+    [ -n "$key" ] || continue
+    k=$(git grep -lF "$key" "$tree_sha" 2>/dev/null | head -3 || true)
+    [ -n "$k" ] && hits="${hits}${k}"
+  done
+  if [ -n "$hits" ]; then
+    echo "✗ Possible API key(s) found in the pushed tree — push blocked:"
+    echo "$hits"
+    echo "  Rotate the key if it was ever pushed. Remove it, then push again."
+    fail=1
+  fi
+done
+
+exit $fail

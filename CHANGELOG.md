@@ -310,3 +310,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Chore
 - Removed stray test log files from the repo + gitignored *.log
+
+### Added
+- Pre-push hook: blocks commits containing API-key patterns (sk-or-v1-, long sk- keys) + optional ~/.fender/blocked-keys.txt blocklist; GitHub secret scanning + push protection enabled
