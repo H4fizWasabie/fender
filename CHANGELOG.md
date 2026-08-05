@@ -277,3 +277,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - `ask` tool (D49): one-shot call to another provider/key — the call IS the subagent (no nested loop/tools/memory); parallel asks in one response; default provider from config `subagent =`; live-verified cross-key (OPINION-A OPINION-B)
+
+### Changed
+- Wayfinder: ticket 17 resolved — ask tool delivered (D49)
