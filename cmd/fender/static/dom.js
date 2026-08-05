@@ -24,6 +24,9 @@ export const ui = {
   sessionIndex: $('#sessionIndex'),
   connection: $('#connectionState'),
   toast: $('#toast'),
+  contextMeter: $('#contextMeter'),
+  contextMeterValue: $('#contextMeterValue'),
+  contextMeterWarning: $('#contextMeterWarning'),
 };
 
 export const state = {

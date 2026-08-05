@@ -115,6 +115,10 @@
           <label for="taskInput">Task for Fender</label>
           <textarea id="taskInput" rows="3" maxlength="200000" placeholder="Describe the work to complete…" required></textarea>
           <div class="composer-footer">
+            <span class="context-meter" id="contextMeter" aria-live="polite" hidden>
+              <span class="context-meter-value" id="contextMeterValue">CH— —/—</span>
+              <span class="context-meter-warning" id="contextMeterWarning" hidden>Near limit · start a new session</span>
+            </span>
             <p><kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</p>
             <button class="send-tab" id="sendTask" type="submit">
               <span>Assign work</span>

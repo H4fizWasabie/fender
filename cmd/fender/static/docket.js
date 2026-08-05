@@ -32,6 +32,30 @@ function modeDescription(mode) {
   return descriptions[mode] || 'Guardrail mode is reported by the runtime.';
 }
 
+function formatWindow(tokens) {
+  const value = Number(tokens);
+  if (!Number.isFinite(value) || value <= 0) return '—';
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
+  return String(Math.round(value));
+}
+
+function renderMeter(meter) {
+  if (!meter || typeof meter !== 'object') {
+    ui.contextMeter.hidden = true;
+    return;
+  }
+  const cache = Number(meter.cache_hit_rate);
+  const usage = Number(meter.usage_percent);
+  const cacheText = Number.isFinite(cache) ? cache.toFixed(1) : '—';
+  const usageText = Number.isFinite(usage) ? usage.toFixed(1) : '—';
+  const nearLimit = meter.near_limit === true;
+  ui.contextMeterValue.textContent = `CH${cacheText}% ${usageText}%/${formatWindow(meter.window)}`;
+  ui.contextMeter.classList.toggle('is-near-limit', nearLimit);
+  ui.contextMeterWarning.hidden = !nearLimit;
+  ui.contextMeter.hidden = false;
+}
+
 export function renderMeta(snapshot) {
   const providerModel = [snapshot.provider, snapshot.model].filter(Boolean).join(' / ') || 'Unavailable';
   document.querySelector('#workspaceName').textContent = snapshot.workspace || 'Current repository';
@@ -41,6 +65,7 @@ export function renderMeta(snapshot) {
   document.querySelector('#topMode').textContent = snapshot.mode || '—';
   document.querySelector('#modelName').textContent = providerModel;
   document.querySelector('#topModel').textContent = providerModel;
+  renderMeter(snapshot.meter);
   const hasMessages = Array.isArray(snapshot.messages) && snapshot.messages.length > 0;
   ui.stamp.textContent = state.resumed ? `RESUMED · ${snapshot.sessionId}` : hasMessages ? snapshot.sessionId : 'NEW SESSION';
   const displayStatus = snapshot.busy ? 'working' : snapshot.status === 'working' ? 'interrupted' : snapshot.status;
@@ -64,19 +89,25 @@ export function appendMessage(role, content) {
   return body;
 }
 
+function isInjectedSkillMessage(message) {
+  return message?.role === 'user' && /^\s*\[skill loaded:/i.test(message.content || '');
+}
+
 export function renderMessages(messages, restoredCount = 0) {
+  const visibleMessages = messages.filter((message) => !isInjectedSkillMessage(message));
+  const visibleRestoredCount = messages.slice(0, restoredCount).filter((message) => !isInjectedSkillMessage(message)).length;
   ui.conversation.replaceChildren();
   ui.conversation.appendChild(ui.empty);
-  ui.empty.hidden = messages.length > 0;
-  if (restoredCount > 0 && messages.length) {
+  ui.empty.hidden = visibleMessages.length > 0;
+  if (visibleRestoredCount > 0 && visibleMessages.length) {
     const divider = document.createElement('div');
     divider.className = 'restored-divider';
     divider.textContent = 'Restored session history';
     ui.conversation.appendChild(divider);
   }
-  messages.forEach((message, index) => {
+  visibleMessages.forEach((message, index) => {
     const content = appendMessage(message.role, message.content);
-    if (index < restoredCount && content) content.closest('.message')?.classList.add('message-restored');
+    if (index < visibleRestoredCount && content) content.closest('.message')?.classList.add('message-restored');
   });
   state.currentAssistant = null;
 }

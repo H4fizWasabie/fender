@@ -547,6 +547,23 @@ body.has-evidence .app-shell {
   font-size: 11px;
 }
 
+.context-meter {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-self: center;
+  min-height: 20px;
+  padding-left: 18px;
+  color: var(--muted);
+  font: 10px/1.4 var(--font-data);
+  letter-spacing: .04em;
+}
+
+.context-meter-value { white-space: nowrap; }
+.context-meter.is-near-limit { color: var(--amber); }
+.context-meter-warning { font-family: var(--font-ui); letter-spacing: 0; }
+
 kbd {
   padding: 1px 4px;
   color: var(--graphite);

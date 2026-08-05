@@ -26,6 +26,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - One-shot `ask` model calls, provider-selectable child agents, and provider-based child identity (D47–D49 superseded by D50).
 
 ### Fixed
+- Dashboard context meter now shows pi-style cache hit and window usage, warns near the context limit, keeps inline tool output visually bounded, and hides injected skill-body messages from the conversation.
 - Dashboard settings now loads its click controller and has a real drawer/scrim state; the desktop workbench is viewport-contained so growing evidence scrolls inside its lane instead of pulling the whole page.
 - Centered Docket reload/resume now reconstructs completion only for explicit terminal states, atomically couples durable completion evidence to terminal session persistence, labels abandoned `working` sessions as editable interruptions, persists real tool/approval/completion evidence, exposes bounded tool-result previews behind disclosure, and reports session-write failures instead of silently claiming resumability.
 - `fender run --config X` now honors the config file instead of falling back to ~/.fender/fender.toml (runTask threads configPath through to buildAgent); TestRunCommand pinned to a throwaway config so it never calls a real provider
