@@ -302,3 +302,8 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Dashboard settings (D51): ⚙ gear → settings drawer — providers (add key/edit/remove, reasoning toggle), guardrail mode, fallback provider; masked keys, blank-preserves-key, dangling-fallback auto-clear, live agent rebuild after save
+
+### Added
+- Provider `path` config (default "/v1"; OpenRouter needs "/api/v1") — fixes double-/v1 class of bugs at the config level
+- OpenRouter `reasoning` field parsed alongside `reasoning_content` (thinking display works on OpenRouter deepseek)
+- User config: OpenRouter primary (deepseek-v4-flash-0731), zen-2 fallback; verified live

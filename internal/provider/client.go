@@ -15,7 +15,8 @@ import (
 type Message struct {
 	Role             string     `json:"role"`
 	Content          string     `json:"content"`
-	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	ReasoningContent string     `json:"reasoning_content,omitempty"` // deepseek-style
+	Reasoning        string     `json:"reasoning,omitempty"`         // openrouter-style
 	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID       string     `json:"tool_call_id,omitempty"`
 }
@@ -70,6 +71,7 @@ type Usage struct {
 type Client struct {
 	name      string
 	base      string
+	path      string // API path prefix ("/v1" default; OpenRouter "/api/v1")
 	apiKey    string
 	model     string
 	models    []string
@@ -84,9 +86,17 @@ func New(name string, p Provider) *Client {
 	if model == "" && len(p.Models) > 0 {
 		model = p.Models[0] // fall back to first model when no default_model set
 	}
+	path := p.Path
+	if path == "" {
+		path = "/v1"
+	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
 	return &Client{
 		name:   name,
 		base:   strings.TrimSuffix(p.BaseURL, "/"),
+		path:   path,
 		apiKey: p.APIKey,
 		model:  model,
 		models: p.Models,
@@ -140,7 +150,7 @@ func (c *Client) Chat(ctx context.Context, req Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+"/v1/chat/completions", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+c.path+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +178,7 @@ type streamChunk struct {
 		Delta struct {
 			Content          string     `json:"content"`
 			ReasoningContent string     `json:"reasoning_content"`
+			Reasoning        string     `json:"reasoning"`
 			ToolCalls        []ToolCall `json:"tool_calls"`
 		} `json:"delta"`
 	} `json:"choices"`
@@ -188,7 +199,7 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), 
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+"/v1/chat/completions", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base+c.path+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -233,10 +244,15 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), 
 				msg.Content += ch.Delta.Content
 				onDelta(ch.Delta.Content)
 			}
-			if ch.Delta.ReasoningContent != "" {
-				msg.ReasoningContent += ch.Delta.ReasoningContent
+			if r := ch.Delta.ReasoningContent; r != "" {
+				msg.ReasoningContent += r
 				if len(onThinking) > 0 {
-					onThinking[0](ch.Delta.ReasoningContent)
+					onThinking[0](r)
+				}
+			} else if r := ch.Delta.Reasoning; r != "" { // openrouter alias
+				msg.ReasoningContent += r
+				if len(onThinking) > 0 {
+					onThinking[0](r)
 				}
 			}
 			for i, tc := range ch.Delta.ToolCalls {
