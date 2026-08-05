@@ -333,3 +333,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Fixed
 - Conversational turns (D53): prose accepted as the answer after two nags — the model asking you a question now ends the turn instead of locking the input
 - Dashboard Stop button: abort the run anytime (AbortController cancels the agent context)
+
+### Added
+- max_iterations config (D54): loop cap per fender.toml, 0 = 30; safe after D52/D53 loop protections

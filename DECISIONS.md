@@ -80,6 +80,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D53 | **Conversational turns (the locked-input bug).** Pure-prose turns are now CHAT answers: after two nags the harness accepts the last prose as the turn (status complete) instead of nagging forever — a question back to the user ends the turn so they can reply. Nag text tells the model the conversational escape explicitly. Dashboard gains a Stop button (AbortController → cancels the run context → input unlocks); stall tests updated: stalls still fire on distinct tool-error loops, prose-only ends complete. |
 
+| D54 | **Configurable loop cap.** `max_iterations` in fender.toml (0 = 30). Safe to raise now that D52/D53 removed the runaway-loop risks; user config set to 60 for big multi-step builds (the supplier-catalogue app hit 30 mid-build with real files written). |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

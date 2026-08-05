@@ -3,9 +3,10 @@ package provider
 
 // Config is the [providers] section of fender.toml.
 type Config struct {
-	Mode      string              `toml:"mode"`     // permission mode: strict | balanced | yolo (D21)
-	Fallback  string              `toml:"fallback"` // backup provider/key after a failed model request (D50)
-	Providers map[string]Provider `toml:"providers"`
+	Mode          string              `toml:"mode"`           // permission mode: strict | balanced | yolo (D21)
+	Fallback      string              `toml:"fallback"`       // backup provider/key after a failed model request (D50)
+	MaxIterations int                 `toml:"max_iterations"` // agent loop cap, 0 = 30 (D54)
+	Providers     map[string]Provider `toml:"providers"`
 }
 
 // Provider is one OpenAI-compatible endpoint (OpenRouter, Ollama, LM Studio, ...).
