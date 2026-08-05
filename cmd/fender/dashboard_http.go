@@ -46,5 +46,6 @@ func newDashboardMux(d *dashState) (*http.ServeMux, error) {
 	mux.HandleFunc("/api/approval", d.handleApproval)
 	mux.HandleFunc("/api/message", d.handleMessage)
 	mux.HandleFunc("/api/events", d.serveEvents)
+	mux.HandleFunc("/api/settings", d.handleSettings)
 	return mux, nil
 }

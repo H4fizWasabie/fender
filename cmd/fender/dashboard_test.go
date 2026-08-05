@@ -413,3 +413,88 @@ func postJSON(t *testing.T, url string, body, target any) {
 		t.Fatal(err)
 	}
 }
+
+func TestSettingsMaskAndPreserve(t *testing.T) {
+	cfgPath := writeConfig(t, `
+mode = "balanced"
+fallback = "zen-2"
+
+[providers.zen]
+base_url = "https://opencode.ai/zen"
+api_key = "sk-SECRETVALUE1234"
+models = ["deepseek-v4-flash-free"]
+default_model = "deepseek-v4-flash-free"
+
+[providers.zen-2]
+base_url = "https://opencode.ai/zen"
+api_key = "sk-BACKUPVALUE5678"
+models = ["deepseek-v4-flash-free"]
+default_model = "deepseek-v4-flash-free"
+`)
+	d, err := newDashState(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux, err := newDashboardMux(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// GET masks the key
+	var got settingsView
+	getJSON(t, srv.URL+"/api/settings", &got)
+	if len(got.Providers) != 2 {
+		t.Fatalf("providers = %d", len(got.Providers))
+	}
+	var zen settingsProvider
+	for _, p := range got.Providers {
+		if p.Name == "zen" {
+			zen = p
+		}
+	}
+	if !strings.Contains(zen.APIKey, "1234") || strings.Contains(zen.APIKey, "SECRET") {
+		t.Fatalf("masked key = %q", zen.APIKey)
+	}
+	if got.Fallback != "zen-2" {
+		t.Fatalf("fallback = %q", got.Fallback)
+	}
+
+	// POST with blank key preserves the stored key (both providers sent,
+	// like the UI does)
+	body := map[string]any{
+		"mode": "yolo", "fallback": "zen-2",
+		"providers": []map[string]any{
+			{
+				"name": "zen", "base_url": "https://opencode.ai/zen",
+				"api_key": "", "key_hint": "1234",
+				"models": []string{"deepseek-v4-flash-free"}, "default_model": "deepseek-v4-flash-free", "thinking": true,
+			},
+			{
+				"name": "zen-2", "base_url": "https://opencode.ai/zen",
+				"api_key": "", "key_hint": "5678",
+				"models": []string{"deepseek-v4-flash-free"}, "default_model": "deepseek-v4-flash-free",
+			},
+		},
+	}
+	var out map[string]string
+	postJSON(t, srv.URL+"/api/settings", body, &out)
+	if out["ok"] != "saved" {
+		t.Fatalf("save = %+v", out)
+	}
+	// reload from disk: key preserved, mode updated
+	cfg, err := d.loadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Providers["zen"].APIKey != "sk-SECRETVALUE1234" {
+		t.Fatalf("key not preserved: %q", cfg.Providers["zen"].APIKey)
+	}
+	if cfg.Mode != "yolo" {
+		t.Fatalf("mode = %q", cfg.Mode)
+	}
+	if !cfg.Providers["zen"].ModelConfigs["deepseek-v4-flash-free"].Thinking {
+		t.Fatal("thinking config not written")
+	}
+}

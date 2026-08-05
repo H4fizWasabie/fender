@@ -35,6 +35,7 @@
 
   <div class="app-shell" id="appShell">
     <header class="ledger-bar">
+      <button class="icon-button" id="settingsGear" type="button" aria-label="Settings" title="Settings">⚙</button>
       <button class="icon-button mobile-index-toggle" id="mobileIndexToggle" type="button" aria-label="Open session index" aria-expanded="false">
         <svg><use href="#icon-menu"/></svg>
       </button>
@@ -149,6 +150,19 @@
     <p class="drawer-copy">Choose a session to restore its conversation. New work will continue under that session ID.</p>
     <div class="session-list" id="sessionList"></div>
   </aside>
+  <aside class="drawer settings-drawer" id="settingsDrawer" aria-hidden="true">
+    <header class="drawer-head">
+      <h2>Settings</h2>
+      <button class="icon-button" id="closeSettings" type="button" aria-label="Close settings">✕</button>
+    </header>
+    <div class="settings-body" id="settingsBody">
+      <p class="settings-loading">Loading…</p>
+    </div>
+    <footer class="drawer-foot">
+      <button class="primary-tab" id="saveSettings" type="button">Save &amp; rebuild agent</button>
+    </footer>
+  </aside>
+  <button class="drawer-scrim" id="settingsScrim" type="button" tabindex="-1" aria-label="Close settings"></button>
   <button class="drawer-scrim" id="drawerScrim" type="button" tabindex="-1" aria-label="Close session drawer"></button>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

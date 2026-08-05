@@ -299,3 +299,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: ticket 17 resolved — ask tool delivered (D49)
+
+### Added
+- Dashboard settings (D51): ⚙ gear → settings drawer — providers (add key/edit/remove, reasoning toggle), guardrail mode, fallback provider; masked keys, blank-preserves-key, dangling-fallback auto-clear, live agent rebuild after save
