@@ -82,6 +82,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D54 | **Configurable loop cap.** `max_iterations` in fender.toml (0 = 30). Safe to raise now that D52/D53 removed the runaway-loop risks; user config set to 60 for big multi-step builds (the supplier-catalogue app hit 30 mid-build with real files written). |
 
+| D55 | **Coding-agent context knobs (dropping mino parity).** mino's 8K inline / 5-turn history / 100K budget were Telegram-bot constraints — Fender is a coding agent with a big-context model. Defaults raised: inline 8K→16K, history 5→20 turns, budget 100K→200K. Configurable per fender.toml: `inline_limit`, `history_turns`, `context_chars`. The artifact machinery (D31) is unchanged — thresholds only. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

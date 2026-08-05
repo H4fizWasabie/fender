@@ -99,7 +99,7 @@ func TestForCompactsOversizedHistory(t *testing.T) {
 // returned messages (D31: select — the catalog rides in context).
 func TestForCatalogRides(t *testing.T) {
 	m := newTestManager(t)
-	m.CompactOutput("shell", strings.Repeat("x", InlineLimit+1))
+	m.CompactOutput("shell", strings.Repeat("x", DefaultInlineLimit+1))
 	out := m.For("", []provider.Message{{Role: "user", Content: "hi"}})
 	found := false
 	for _, msg := range out {

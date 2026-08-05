@@ -336,3 +336,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - max_iterations config (D54): loop cap per fender.toml, 0 = 30; safe after D52/D53 loop protections
+
+### Changed
+- Context knobs (D55): inline 8K→16K, history 5→20 turns, budget 100K→200K — minos Telegram constraints dropped for coding-agent needs; configurable via inline_limit/history_turns/context_chars

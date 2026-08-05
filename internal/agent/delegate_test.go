@@ -75,7 +75,7 @@ func TestDelegateBlocked(t *testing.T) {
 func TestDelegateChildGetsOwnContext(t *testing.T) {
 	llm := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "delegate", `{"prompt":"do the big thing"}`),
-		toolReply("call_c1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_c1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
 		completeReply("complete", "child done"),
 		completeReply("complete", "parent done"),
 	}}

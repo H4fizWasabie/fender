@@ -30,7 +30,7 @@ func artifactPath(t *testing.T, pointer string) string {
 
 func TestCompactOutputUnderLimitInline(t *testing.T) {
 	m := newTestManager(t)
-	output := strings.Repeat("x", InlineLimit)
+	output := strings.Repeat("x", DefaultInlineLimit)
 	if got := m.CompactOutput("shell", output); got != output {
 		t.Fatalf("inline output changed")
 	}
@@ -38,7 +38,7 @@ func TestCompactOutputUnderLimitInline(t *testing.T) {
 
 func TestCompactOutputWritesArtifact(t *testing.T) {
 	m := newTestManager(t)
-	output := strings.Repeat("x", InlineLimit+1)
+	output := strings.Repeat("x", DefaultInlineLimit+1)
 	got := m.CompactOutput("shell", output)
 	if !strings.Contains(got, "[artifact:") {
 		t.Fatalf("no artifact pointer: %.60q", got)
@@ -62,7 +62,7 @@ func TestCompactOutputWritesArtifact(t *testing.T) {
 
 func TestCompactOutputKeepsReadInline(t *testing.T) {
 	m := newTestManager(t)
-	output := strings.Repeat("x", InlineLimit+1)
+	output := strings.Repeat("x", DefaultInlineLimit+1)
 	if got := m.CompactOutput("read_file", output); got != output {
 		t.Fatal("read_file was compacted (D31: the one tool never compacted)")
 	}
@@ -70,19 +70,19 @@ func TestCompactOutputKeepsReadInline(t *testing.T) {
 
 func TestCompactOutputNoOverwrite(t *testing.T) {
 	m := newTestManager(t)
-	p1 := artifactPath(t, m.CompactOutput("shell", strings.Repeat("a", InlineLimit+1)))
-	p2 := artifactPath(t, m.CompactOutput("shell", strings.Repeat("b", InlineLimit+1)))
+	p1 := artifactPath(t, m.CompactOutput("shell", strings.Repeat("a", DefaultInlineLimit+1)))
+	p2 := artifactPath(t, m.CompactOutput("shell", strings.Repeat("b", DefaultInlineLimit+1)))
 	if p1 == p2 {
 		t.Fatal("repeated tool calls share an artifact path")
 	}
-	if data, _ := os.ReadFile(p1); string(data) != strings.Repeat("a", InlineLimit+1) {
+	if data, _ := os.ReadFile(p1); string(data) != strings.Repeat("a", DefaultInlineLimit+1) {
 		t.Fatal("first artifact overwritten")
 	}
 }
 
 func TestChildIsolation(t *testing.T) {
 	m := newTestManager(t)
-	m.CompactOutput("shell", strings.Repeat("x", InlineLimit+1))
+	m.CompactOutput("shell", strings.Repeat("x", DefaultInlineLimit+1))
 	c := m.Child()
 	if c.Root == m.Root {
 		t.Fatalf("child root %q equals parent root", c.Root)

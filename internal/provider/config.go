@@ -6,6 +6,9 @@ type Config struct {
 	Mode          string              `toml:"mode"`           // permission mode: strict | balanced | yolo (D21)
 	Fallback      string              `toml:"fallback"`       // backup provider/key after a failed model request (D50)
 	MaxIterations int                 `toml:"max_iterations"` // agent loop cap, 0 = 30 (D54)
+	ContextChars  int                 `toml:"context_chars"`  // per-turn context budget, 0 = 200K (D55)
+	HistoryTurns  int                 `toml:"history_turns"`  // history depth kept by For, 0 = 20 (D55)
+	InlineLimit   int                 `toml:"inline_limit"`   // tool-output inline ceiling, 0 = 16K (D55)
 	Providers     map[string]Provider `toml:"providers"`
 }
 

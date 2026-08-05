@@ -18,13 +18,17 @@ import (
 const (
 	// InlineLimit is the 8K rule (D31): tool output above this becomes an
 	// artifact pointer, never inline.
-	InlineLimit = 8000
+	// DefaultInlineLimit is the tool-output inline ceiling; a coding agent
+	// with a big-context model sees more inline before artifact compaction
+	// (D55 — mino's 8K was for a Telegram bot, not a coding agent).
+	DefaultInlineLimit = 16_000
 	// PreviewLimit is the HEAD/TAIL budget for compacted user input.
 	PreviewLimit = 8000
-	// DefaultChars is the per-turn context budget (mino parity).
-	DefaultChars = 100_000
-	// DefaultTurns is the history depth kept by For (0 -> DefaultTurns).
-	DefaultTurns = 5
+	// DefaultChars is the per-turn context budget (D55: raised for coding).
+	DefaultChars = 200_000
+	// DefaultTurns is the history depth kept by For (D55: raised from mino's
+	// 5 — a mid-build agent must remember what it wrote 15 steps ago).
+	DefaultTurns = 20
 	// SweepAge is the artifact retention window (D31 isolate sweep).
 	SweepAge = 24 * time.Hour
 
@@ -46,6 +50,7 @@ type Manager struct {
 	Root            string // artifact root (default /tmp/fender/artifacts/<runID>)
 	ContextChars    int    // 0 -> DefaultChars
 	MaxHistoryTurns int    // 0 -> DefaultTurns
+	InlineLimit     int    // tool-output inline ceiling; 0 -> DefaultInlineLimit
 	mu              sync.Mutex
 	runID           string
 	turn            int // internal counter -> <Root>/<n>/<tool>.txt
@@ -54,7 +59,7 @@ type Manager struct {
 
 // New returns a Manager rooted at /tmp/fender/artifacts/<random hex>.
 func New() *Manager {
-	m := &Manager{ContextChars: DefaultChars, MaxHistoryTurns: DefaultTurns, runID: randomID()}
+	m := &Manager{ContextChars: DefaultChars, MaxHistoryTurns: DefaultTurns, InlineLimit: DefaultInlineLimit, runID: randomID()}
 	m.Root = filepath.Join("/tmp/fender/artifacts", m.runID)
 	return m
 }
@@ -72,6 +77,7 @@ func (m *Manager) Child() *Manager {
 		Root:            filepath.Join(filepath.Dir(m.Root), runID),
 		ContextChars:    m.ContextChars,
 		MaxHistoryTurns: m.MaxHistoryTurns,
+		InlineLimit:     m.InlineLimit,
 		runID:           runID,
 	}
 }
@@ -93,7 +99,11 @@ func randomID() string {
 // the catalog. A write failure keeps the first InlineLimit chars inline
 // with a marker — never silent truncation.
 func (m *Manager) CompactOutput(tool, output string) string {
-	if tool == "read_file" || len(output) <= InlineLimit {
+	limit := m.InlineLimit
+	if limit <= 0 {
+		limit = DefaultInlineLimit
+	}
+	if tool == "read_file" || len(output) <= limit {
 		return output
 	}
 	m.mu.Lock()
@@ -101,11 +111,11 @@ func (m *Manager) CompactOutput(tool, output string) string {
 	m.turn++
 	dir := filepath.Join(m.Root, fmt.Sprintf("%d", m.turn))
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return output[:InlineLimit] + "\n[artifact write failed]"
+		return output[:limit] + "\n[artifact write failed]"
 	}
 	path := filepath.Join(dir, safeName(tool)+".txt")
 	if err := os.WriteFile(path, []byte(output), 0o600); err != nil {
-		return output[:InlineLimit] + "\n[artifact write failed]"
+		return output[:limit] + "\n[artifact write failed]"
 	}
 	m.recordLocked(Artifact{Label: tool, Path: path, Size: len(output)})
 	return fmt.Sprintf("[artifact: %s → %d chars at %s; use read_file with offset and limit]", tool, len(output), path)

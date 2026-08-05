@@ -339,7 +339,7 @@ func TestRunSystemPrompt(t *testing.T) {
 func TestRunCompactsLargeToolOutput(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
 		completeReply("complete", "done"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
@@ -354,14 +354,14 @@ func TestRunCompactsLargeToolOutput(t *testing.T) {
 	if !strings.Contains(got, "[artifact:") {
 		t.Fatalf("tool result not compacted: %.100q", got)
 	}
-	if strings.Contains(got, strings.Repeat("y", 9000)) {
+	if strings.Contains(got, strings.Repeat("y", 17000)) {
 		t.Fatal("raw 9K output leaked inline")
 	}
 }
 
 func TestRunReadFileStaysInline(t *testing.T) {
 	proj := t.TempDir()
-	big := strings.Repeat("r", 10000)
+	big := strings.Repeat("r", 17000)
 	if err := os.WriteFile(filepath.Join(proj, "big.txt"), []byte(big), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -385,8 +385,8 @@ func TestRunReadFileStaysInline(t *testing.T) {
 func TestRunDedupReplaysPointer(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
-		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
-		toolReply("call_2", "shell", `{"command":"printf 'y%.0s' {1..9000}"}`),
+		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
+		toolReply("call_2", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
 		completeReply("complete", "ok"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
