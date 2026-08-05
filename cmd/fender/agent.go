@@ -21,7 +21,7 @@ const defaultSystem = `You are Fender, a coding agent. Work autonomously within 
 
 // buildAgent wires every subsystem from fender.toml (ticket-08 spec §5).
 // modeOverride nil → the config's mode; approver nil → ASK is denied.
-func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd, reason string) (bool, error)) (*agent.Agent, error) {
+func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(context.Context, string, string) (bool, error)) (*agent.Agent, error) {
 	var (
 		reg *provider.Registry
 		err error
@@ -43,15 +43,7 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 		return nil, err
 	}
 
-	mode := guardrail.Balanced
-	if cfgPath != "" {
-		var cfg provider.Config
-		if _, err := toml.DecodeFile(cfgPath, &cfg); err == nil {
-			if cfg.Mode != "" {
-				mode = guardrail.Mode(cfg.Mode)
-			}
-		}
-	}
+	mode := configuredMode(cfgPath)
 	if modeOverride != nil {
 		mode = *modeOverride
 	}
@@ -96,6 +88,31 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cmd,
 	a.Skills = regSkills
 	a.Ctx = ctxpkg.New()
 	return a, nil
+}
+
+// configuredMode mirrors provider.LoadDefault's path order so the guardrail
+// and dashboard report the same effective mode even when --config is omitted.
+func configuredMode(cfgPath string) guardrail.Mode {
+	paths := []string{cfgPath}
+	if cfgPath == "" {
+		paths = []string{"fender.toml"}
+		if home, err := os.UserHomeDir(); err == nil {
+			paths = append(paths, filepath.Join(home, ".fender", "fender.toml"))
+		}
+	}
+	for _, path := range paths {
+		if path == "" {
+			continue
+		}
+		var cfg provider.Config
+		if _, err := toml.DecodeFile(path, &cfg); err != nil {
+			continue
+		}
+		if mode, err := guardrail.ParseMode(cfg.Mode); err == nil {
+			return mode
+		}
+	}
+	return guardrail.Balanced
 }
 
 // intelRefreshTool lets the agent refresh the code index when it senses

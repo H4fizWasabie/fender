@@ -21,9 +21,9 @@ const outputCap = 8 << 20 // 8 MiB
 type ShellConfig struct {
 	Mode       guardrail.Mode
 	ProjectDir string
-	Audit      *guardrail.Audit                       // nil = no audit
-	Timeout    time.Duration                          // 0 → guardrail.DefaultTimeout
-	Approver   func(cmd, reason string) (bool, error) // nil → ASK is denied
+	Audit      *guardrail.Audit                                    // nil = no audit
+	Timeout    time.Duration                                       // 0 → guardrail.DefaultTimeout
+	Approver   func(context.Context, string, string) (bool, error) // nil → ASK is denied
 }
 
 func shellTool(cfg ShellConfig) Tool {
@@ -53,7 +53,7 @@ func shellTool(cfg ShellConfig) Tool {
 				if cfg.Approver == nil {
 					return "", fmt.Errorf("shell: requires approval (%s); no approver configured", reason)
 				}
-				ok, err := cfg.Approver(cmd, reason)
+				ok, err := cfg.Approver(ctx, cmd, reason)
 				if err != nil {
 					return "", fmt.Errorf("shell: approval error: %v", err)
 				}

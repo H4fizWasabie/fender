@@ -4,7 +4,14 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ## [Unreleased]
 
+### Added
+- Centered Docket browser workbench (D51): new-session-first task surface, explicit resumable session index, live activity/evidence slips, responsive layout, accessible states, and truthful completion handoff.
+- Dashboard state/session/approval APIs so one browser session keeps a stable ID, old sessions can be resumed explicitly, and strict/balanced shell holds can be approved or denied from the workbench.
+- `PRODUCT.md` plus Impeccable surface brief, approved comp, prompts, and design evidence for the redesigned workbench.
+- Marketing visual archive under `docs/marketing/fender-workbench/`, preserving all direction sketches, composition studies, and desktop/mobile render passes with truth-safe usage notes.
+
 ### Changed
+- Fender now opens a fresh session by default in both browser and terminal; CLI resumption is explicit through `--resume <id|latest>` (D51 supersedes D41's auto-resume default).
 - Agent model reconciled (D50): exactly one persistent main agent; `delegate` now runs one synchronous ephemeral child on the same provider fallback chain with fresh conversation, artifact context, and memory handle; child delegation and child session persistence are unavailable by construction.
 - Tool calls execute sequentially in model order again; broad D48 parallel dispatch is superseded until measured evidence justifies a new decision.
 - Governing docs and terminology now distinguish main agent, child agent, project memory, working state, and provider fallback.

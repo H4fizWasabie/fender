@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -17,6 +18,8 @@ import (
 type sessionFile struct {
 	ID           string             `json:"id"`
 	Started      string             `json:"started"`
+	Updated      string             `json:"updated,omitempty"`
+	Status       string             `json:"status,omitempty"`
 	Messages     []provider.Message `json:"messages"`
 	Consolidated bool               `json:"consolidated,omitempty"` // D43
 }
@@ -52,17 +55,30 @@ func loadLatestSession() (*sessionFile, error) {
 	if err != nil || len(files) == 0 {
 		return nil, err
 	}
+	return loadSession(files[0].ID)
+}
+
+// loadSession restores one explicitly selected session. IDs are filenames,
+// not paths; rejecting separators keeps the HTTP and CLI resume seams inside
+// .fender/sessions.
+func loadSession(id string) (*sessionFile, error) {
+	if id == "" || id == "." || id == ".." || strings.ContainsAny(id, `/\\`) {
+		return nil, fmt.Errorf("invalid session id %q", id)
+	}
 	dir, err := sessionsDir()
 	if err != nil {
 		return nil, err
 	}
-	data, err := os.ReadFile(filepath.Join(dir, files[0].ID+".json"))
+	data, err := os.ReadFile(filepath.Join(dir, id+".json"))
 	if err != nil {
 		return nil, err
 	}
 	var s sessionFile
 	if err := json.Unmarshal(data, &s); err != nil {
 		return nil, err
+	}
+	if s.ID != id {
+		return nil, fmt.Errorf("session id mismatch: requested %q, file contains %q", id, s.ID)
 	}
 	return &s, nil
 }
@@ -99,7 +115,7 @@ func listSessions() ([]sessionFile, error) {
 }
 
 func newSessionID() string {
-	return time.Now().Format("20060102-150405")
+	return time.Now().Format("20060102-150405.000000000")
 }
 
 func formatSessions(files []sessionFile) string {

@@ -18,20 +18,31 @@ import (
 
 // repl is the interactive loop (D26): slash commands + Agent.Run with
 // observer rendering. History lives in memory for the session (D9).
-func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath string, fresh bool) error {
+func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) error {
 	fmt.Fprintf(out, "fender %s — type /help for commands\n", version)
 
 	state := &replState{cfgPath: cfgPath, mode: guardrail.Balanced}
-	if !fresh {
-		if prev, err := loadLatestSession(); err == nil && prev != nil {
-			state.history = prev.Messages
-			fmt.Fprintf(out, "resumed session %s (%d messages)\n", prev.ID, len(prev.Messages))
+	if resumeID != "" {
+		var prev *sessionFile
+		var err error
+		if resumeID == "latest" {
+			prev, err = loadLatestSession()
+		} else {
+			prev, err = loadSession(resumeID)
 		}
+		if err != nil {
+			return fmt.Errorf("resume session: %w", err)
+		}
+		if prev == nil {
+			return fmt.Errorf("resume session: no saved sessions")
+		}
+		state.history = prev.Messages
+		fmt.Fprintf(out, "resumed session %s (%d messages)\n", prev.ID, len(prev.Messages))
 	}
 	state.session = &sessionFile{ID: newSessionID(), Started: time.Now().Format(time.RFC3339)}
 	var streamed bool // any delta shown this run (reply may duplicate)
 	state.rebuild = func() error {
-		approver := func(cmd, reason string) (bool, error) {
+		approver := func(_ context.Context, cmd, reason string) (bool, error) {
 			fmt.Fprintf(out, "\n  [approval] %s\n  %s [y/N] ", reason, cmd)
 			line, err := in.ReadString('\n')
 			if err != nil {

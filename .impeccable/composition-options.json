@@ -1,0 +1,48 @@
+{
+  "title": "Choose Fender's workbench composition",
+  "question": "Which layout should carry the Engineer's Job Docket into the real product? Use steer if you want to combine specific parts.",
+  "options": [
+    {
+      "id": "centered",
+      "label": "Centered Docket",
+      "kicker": "CLEAREST SCAN",
+      "lineage": "A dominant task sheet with a quiet session index and attached evidence slips",
+      "thesis": "The current task owns the center while every earned proof remains visible at its edge.",
+      "palette": ["#F2F0E8", "#1D2321", "#D45A2A", "#2E6B4F", "#C8CCC4"],
+      "materials": ["technical stock", "graphite rules", "inspection slips", "index tabs"],
+      "viewport": "A narrow left context rail, dominant center docket, right evidence slips, and an integrated bottom composer.",
+      "risk": "The permanent three-column frame can make a fresh session feel busier than necessary.",
+      "case": "Best at scanning active work and proof together; weakest when nothing has happened yet.",
+      "sketch": ".impeccable/mocks/comp-centered.png"
+    },
+    {
+      "id": "progressive",
+      "label": "Progressive Casefile",
+      "kicker": "RECOMMENDED BASE",
+      "lineage": "One focused task sheet that unfolds only as the run creates new states",
+      "thesis": "Fender stays nearly empty at the start, then turns one task into a legible engineering record.",
+      "palette": ["#F2F0E8", "#1D2321", "#D45A2A", "#2E6B4F", "#C8CCC4"],
+      "materials": ["casefile folds", "graphite rules", "phase tabs", "verification stamp"],
+      "viewport": "A single centered casefile with a large task entry and progressively disclosed objective, work, files, checks, holds, and handoff.",
+      "risk": "Important proof may require scrolling unless completion earns a stronger summary treatment.",
+      "case": "Strongest expression of simple first, informative when needed; it benefits from the Review Desk's completion handoff.",
+      "sketch": ".impeccable/mocks/comp-progressive.png"
+    },
+    {
+      "id": "review-desk",
+      "label": "Review Desk",
+      "kicker": "STRONGEST HANDOFF",
+      "lineage": "A central work docket with an on-demand proof lane and signed completion band",
+      "thesis": "Work stays central; proof occupies its own lane only when Fender has something real to show.",
+      "palette": ["#F2F0E8", "#1D2321", "#D45A2A", "#2E6B4F", "#C8CCC4"],
+      "materials": ["review sheets", "graphite rules", "collapsible proof lane", "handoff stamp"],
+      "viewport": "A task surface beside an earned proof lane, with a full-width completion handoff at the bottom.",
+      "risk": "A visible session rail and empty proof lane would clutter the new-session state if implemented literally.",
+      "case": "Best completion moment and expert inspection; should not expose all surrounding structure before it is useful.",
+      "sketch": ".impeccable/mocks/comp-review-desk.png"
+    }
+  ],
+  "reroll": true,
+  "canon": false,
+  "steer": true
+}

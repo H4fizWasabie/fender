@@ -11,6 +11,7 @@ import (
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/guardrail"
+	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
@@ -92,6 +93,26 @@ func TestRunCompletes(t *testing.T) {
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "do the thing"}})
 	if res.Status != "complete" || res.Reply != "all done" || res.Iterations != 1 {
 		t.Fatalf("res = %+v", res)
+	}
+}
+
+func TestRunDoesNotAccumulateBootstrapSystem(t *testing.T) {
+	proj := t.TempDir()
+	f := &fakeLLM{steps: []*provider.Response{
+		completeReply("complete", "first"),
+		completeReply("complete", "second"),
+	}}
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
+	a := NewAgent(f, reg)
+	a.System = "base system"
+	a.Mem = memory.New(proj)
+	if err := a.Mem.Ensure(); err != nil {
+		t.Fatal(err)
+	}
+	a.Run(context.Background(), []provider.Message{{Role: "user", Content: "one"}})
+	a.Run(context.Background(), []provider.Message{{Role: "user", Content: "two"}})
+	if a.System != "base system" {
+		t.Fatalf("Agent.System accumulated per-run bootstrap content: %q", a.System)
 	}
 }
 

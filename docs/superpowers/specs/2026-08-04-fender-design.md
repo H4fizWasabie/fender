@@ -1,7 +1,7 @@
 # Fender — Design Spec
 
 **Date:** 2026-08-04; reconciled 2026-08-05 through D50
-**Status:** Implemented through D50. UI/UX redesign is a separate active discussion.
+**Status:** Implemented through D50. D51 workbench redesign approved and in progress.
 
 Fender is an open-source coding agent harness built from scratch in Go. It ships a terminal CLI and localhost browser dashboard in one binary. It exists for control + learning; the engineering methodology is Matt Pocock's skills + ponytail, native from day one.
 
@@ -117,7 +117,19 @@ Plus: turns-truncation with compaction markers, `ContextFor` budget arithmetic, 
 
 ### 3.9 UI (D2, D26)
 
-The terminal is a plain streaming transcript with minimal ANSI color, visible tool-call lines, readable approval prompts, and slash commands. The single binary also embeds a localhost browser dashboard driven by the same observer events. A broader UI/UX redesign is intentionally not specified here until its decisions are approved.
+The terminal remains a plain streaming transcript with minimal ANSI color, visible tool-call lines, readable approval prompts, and slash commands. It opens a fresh session by default; `--resume <id|latest>` restores an earlier session explicitly.
+
+The embedded localhost browser is the **Centered Docket** workbench (D51), an Operate surface rather than a source editor:
+
+- a compact left index contains New session, explicit Resume, repository, model, and permission context;
+- one central docket owns the task composer and chronological user/main-agent record;
+- an evidence lane is absent in a fresh session and attaches slips only for real observer events (tool, child, thinking, approval, error, completion);
+- completion shows the actual runtime status and final reply, without inferring changed files, checks, or external proof;
+- a dashboard session owns one stable persisted ID across turns; new and resumed sessions rebuild clean agent state;
+- strict/balanced shell ASK verdicts become a pending browser hold with explicit approve/deny controls;
+- responsive layouts preserve the same hierarchy by turning the session index into a drawer and placing evidence after the docket on narrow screens.
+
+The UI is plain embedded HTML/CSS/JS with no framework. Its durable visual language is warm technical stock, graphite rules, safety orange for action/attention, verification green only for proven completion, clipped sheets, flat matte surfaces, and progressive disclosure.
 
 ### 3.10 Config (D25)
 

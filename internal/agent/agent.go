@@ -25,10 +25,12 @@ type LLM interface {
 // JSON tags are load-bearing: the dashboard SSE (ticket 12) marshals events
 // and the browser switches on lowercase keys.
 type Event struct {
-	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "done"
+	Kind   string `json:"kind"`             // "delta" | "thinking" | "tool" | "approval" | "done"
 	Text   string `json:"text"`             // delta text / tool description / final reply
 	Status string `json:"status"`           // tool status ("ok"|"error"|"cached") or result status
 	Source string `json:"source,omitempty"` // "" = main agent; "child" = ephemeral child (D50)
+	ID     string `json:"id,omitempty"`     // pending interaction identity (D51 approval holds)
+	Detail string `json:"detail,omitempty"` // user-facing reason or supporting runtime detail
 }
 
 // Streamer is the optional streaming capability of an LLM (spec §3.2).
@@ -84,26 +86,27 @@ type Result struct {
 // ctx cancellation. Flat by default; on thrash (tool errors, repeated same
 // call, no progress) it injects ONE orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
+	system := a.System
 	if a.Mem != nil {
 		if b, err := a.Mem.Bootstrap(); err == nil {
-			a.System = b.System() + a.System // constitution first, then task-specific
+			system = b.System() + system // constitution first, then task-specific
 		}
 	}
 	if a.Skills != nil {
 		if core, ok := a.Skills.PonytailCore(); ok {
-			a.System = core.Body + "\n\n" + a.System // D30: always-loaded discipline
+			system = core.Body + "\n\n" + system // D30: always-loaded discipline
 		}
-		a.System = a.Skills.Descriptions() + "\n" + a.System
+		system = a.Skills.Descriptions() + "\n" + system
 		for _, s := range a.Skills.Match(lastUserContent(msgs)) {
-			a.System += "\n[skill loaded: " + s.Name + "]\n" + s.Body
+			system += "\n[skill loaded: " + s.Name + "]\n" + s.Body
 		}
 	}
 	if a.Ctx != nil {
 		a.Ctx.Cleanup(ctxpkg.SweepAge)
-		msgs = a.Ctx.For(a.System, msgs)
+		msgs = a.Ctx.For(system, msgs)
 	}
-	if a.System != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
-		msgs = append([]provider.Message{{Role: "system", Content: a.System}}, msgs...)
+	if system != "" && (len(msgs) == 0 || msgs[0].Role != "system") {
+		msgs = append([]provider.Message{{Role: "system", Content: system}}, msgs...)
 	}
 	maxIter := a.MaxIter
 	if maxIter == 0 {
