@@ -295,6 +295,36 @@ default_model = "m1"
 	}
 }
 
+func TestDashboardDoesNotPersistDoneBeforeTerminalState(t *testing.T) {
+	chdir(t, t.TempDir())
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.session.Status = "working"
+	if err := saveSession(d.session); err != nil {
+		t.Fatal(err)
+	}
+	d.broadcast(agent.Event{Kind: "done", Text: "finished", Status: "complete"})
+
+	saved, err := loadSession(d.session.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, event := range saved.Events {
+		if event.Kind == "done" {
+			t.Fatalf("done event persisted before terminal session state: %+v", saved)
+		}
+	}
+}
+
 func TestDashboardRunReportsInitialPersistenceFailure(t *testing.T) {
 	chdir(t, t.TempDir())
 	cfg := writeConfig(t, `

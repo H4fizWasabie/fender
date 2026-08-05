@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"log/slog"
 )
 
 // ModelClient is the provider surface used by the agent and fallback chain.
@@ -39,7 +40,9 @@ func (c *FallbackClient) SetThinking(level string) error {
 	if err := c.primary.SetThinking(level); err != nil {
 		return err
 	}
-	_ = c.backup.SetThinking(level)
+	if err := c.backup.SetThinking(level); err != nil {
+		slog.Warn("fallback provider does not support primary thinking level", "provider", c.backup.Name(), "level", level, "error", err)
+	}
 	return nil
 }
 

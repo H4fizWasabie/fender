@@ -19,8 +19,13 @@ func (d *dashState) broadcast(e agent.Event) {
 	if durableEvent(e) && d.session != nil {
 		d.events = append(d.events, e)
 		d.session.Events = append([]agent.Event(nil), d.events...)
-		clone := cloneSession(d.session)
-		saved = &clone
+		// A done event becomes durable only with finishTurn's terminal status.
+		// Persisting it while status is still working can fabricate completion
+		// after a crash or final-save failure.
+		if e.Kind != "done" {
+			clone := cloneSession(d.session)
+			saved = &clone
+		}
 	}
 	for ch := range d.subs {
 		select {

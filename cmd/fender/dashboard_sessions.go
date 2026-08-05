@@ -28,11 +28,10 @@ func (d *dashState) installSession(s *sessionFile, restored int) error {
 	}
 	d.mu.Unlock()
 
-	a, err := buildAgent(d.cfgPath, nil, d.requestApproval)
+	a, err := d.configuredAgent()
 	if err != nil {
 		return err
 	}
-	a.Observer = d.broadcast
 
 	d.mu.Lock()
 	defer d.mu.Unlock()

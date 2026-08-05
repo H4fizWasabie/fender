@@ -1,7 +1,7 @@
 # Fender — Design Spec
 
-**Date:** 2026-08-04; reconciled 2026-08-05 through D50
-**Status:** Implemented through D50. D51 workbench redesign approved and in progress.
+**Date:** 2026-08-04; reconciled 2026-08-05 through D51
+**Status:** Implemented through D51.
 
 Fender is an open-source coding agent harness built from scratch in Go. It ships a terminal CLI and localhost browser dashboard in one binary. It exists for control + learning; the engineering methodology is Matt Pocock's skills + ponytail, native from day one.
 

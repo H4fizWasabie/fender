@@ -50,6 +50,14 @@ function addApproval(event) {
   return slip;
 }
 
+function addToolEvent(event) {
+  addSlip({ kind: 'tool', title: humanize(event.text || 'Tool call'), status: event.status || 'ok', detail: event.detail, source: event.source });
+}
+
+function addDoneEvent(event) {
+  addCompletion(event.status, event.text);
+}
+
 async function answerApproval(id, allowed) {
   const actions = ui.evidenceList.querySelector(`[data-event-id="${CSS.escape(id)}"] .approval-actions`);
   actions?.querySelectorAll('button').forEach((button) => { button.disabled = true; });
@@ -65,12 +73,12 @@ export function renderEvidence(snapshot) {
   clearEvidence();
   const events = Array.isArray(snapshot.events) ? snapshot.events : [];
   for (const event of events) {
-    if (event.kind === 'tool') addSlip({ kind: 'tool', title: humanize(event.text || 'Tool call'), status: event.status || 'ok', detail: event.detail, source: event.source });
+    if (event.kind === 'tool') addToolEvent(event);
     if (event.kind === 'approval') addApproval(event);
-    if (event.kind === 'done' && !event.source) addCompletion(event.status, event.text);
+    if (event.kind === 'done' && !event.source && snapshot.terminal) addDoneEvent(event);
   }
   if (snapshot.approval) addApproval({ status: 'pending', id: snapshot.approval.id, text: snapshot.approval.command, detail: snapshot.approval.reason });
-  const hasCompletion = events.some((event) => event.kind === 'done' && !event.source);
+  const hasCompletion = snapshot.terminal && events.some((event) => event.kind === 'done' && !event.source);
   if (snapshot.terminal && !hasCompletion) {
     const lastAssistant = [...(snapshot.messages || [])].reverse().find((message) => message.role === 'assistant');
     addCompletion(snapshot.status, lastAssistant?.content || 'This saved turn has no additional reply.');
@@ -85,7 +93,7 @@ export function handleEvent(event) {
   if (event.kind === 'tool') {
     state.currentAssistant = null;
     state.currentThinking = null;
-    addSlip({ kind: 'tool', title: humanize(event.text || 'Tool call'), status: event.status || 'ok', detail: event.detail, source });
+    addToolEvent(event);
   }
   if (event.kind === 'approval') addApproval(event);
   if (event.kind !== 'done' || source) return false;
@@ -97,6 +105,6 @@ export function handleEvent(event) {
   state.currentAssistant = null;
   state.currentThinking = null;
   setRunStatus(event.status, false);
-  addCompletion(event.status, reply);
+  addDoneEvent(event);
   return true;
 }
