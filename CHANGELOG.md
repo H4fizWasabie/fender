@@ -263,3 +263,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Deferred
 - Parallel subagent dispatch (D8): loop is sequential by design; N-goroutine join needs its own ticket
+
+### Fixed
+- context.Manager thread-safety: mutex on catalog/turn; fixed self-deadlock (record re-lock) and copylocks deadlock (Child() copied the locked mutex) — race detector clean across all packages

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -39,11 +40,13 @@ type Artifact struct {
 
 // Manager is the artifact layer for one agent run. Per-agent instances
 // (D38): a child agent gets its own Manager via Child() — no shared mutable
-// state across goroutines.
+// state across goroutines. Internally mutex-guarded: parallel tool
+// execution (D48) calls CompactOutput/record concurrently.
 type Manager struct {
 	Root            string // artifact root (default /tmp/fender/artifacts/<runID>)
 	ContextChars    int    // 0 -> DefaultChars
 	MaxHistoryTurns int    // 0 -> DefaultTurns
+	mu              sync.Mutex
 	runID           string
 	turn            int // internal counter -> <Root>/<n>/<tool>.txt
 	catalog         []Artifact
@@ -59,12 +62,18 @@ func New() *Manager {
 // Child clones the settings with a fresh run dir and catalog (D38: subagent
 // isolation — the child's artifacts never mix with the parent's).
 func (m *Manager) Child() *Manager {
-	c := *m
-	c.runID = randomID()
-	c.turn = 0
-	c.catalog = nil
-	c.Root = filepath.Join(filepath.Dir(m.Root), c.runID)
-	return &c
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Build the child field-by-field: copying the parent struct would copy
+	// the (possibly locked) mutex — a copylocks bug that deadlocked every
+	// child artifact op.
+	runID := randomID()
+	return &Manager{
+		Root:            filepath.Join(filepath.Dir(m.Root), runID),
+		ContextChars:    m.ContextChars,
+		MaxHistoryTurns: m.MaxHistoryTurns,
+		runID:           runID,
+	}
 }
 
 // randomID returns 16 hex chars; on entropy failure it falls back to a
@@ -87,6 +96,8 @@ func (m *Manager) CompactOutput(tool, output string) string {
 	if tool == "read_file" || len(output) <= InlineLimit {
 		return output
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.turn++
 	dir := filepath.Join(m.Root, fmt.Sprintf("%d", m.turn))
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -96,7 +107,7 @@ func (m *Manager) CompactOutput(tool, output string) string {
 	if err := os.WriteFile(path, []byte(output), 0o600); err != nil {
 		return output[:InlineLimit] + "\n[artifact write failed]"
 	}
-	m.record(Artifact{Label: tool, Path: path, Size: len(output)})
+	m.recordLocked(Artifact{Label: tool, Path: path, Size: len(output)})
 	return fmt.Sprintf("[artifact: %s → %d chars at %s; use read_file with offset and limit]", tool, len(output), path)
 }
 
@@ -137,6 +148,13 @@ func safeName(s string) string {
 }
 
 func (m *Manager) record(a Artifact) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.recordLocked(a)
+}
+
+// recordLocked appends without locking — callers must hold m.mu.
+func (m *Manager) recordLocked(a Artifact) {
 	for _, have := range m.catalog {
 		if have.Path == a.Path {
 			return
@@ -149,6 +167,8 @@ func (m *Manager) record(a Artifact) {
 // rides in context via For() so the model knows what it can fetch (D31:
 // select).
 func (m *Manager) Catalog() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if len(m.catalog) == 0 {
 		return ""
 	}
