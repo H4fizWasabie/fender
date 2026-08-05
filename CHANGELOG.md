@@ -274,3 +274,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Wayfinder: ticket 16 resolved — parallel subagents live-verified with two different account keys (parent zen → subagents zen-2, SUB-A/SUB-B returned)
+
+### Added
+- `ask` tool (D49): one-shot call to another provider/key — the call IS the subagent (no nested loop/tools/memory); parallel asks in one response; default provider from config `subagent =`; live-verified cross-key (OPINION-A OPINION-B)

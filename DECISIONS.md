@@ -68,6 +68,8 @@ Working name: **Fender** (directory: `~/Desktop/Fender`). Discussion session —
 
 | D48 | **Parallel subagents + identity (ticket 16).** Loop tool-execution phase fans out independent calls in one turn (N goroutines + WaitGroup join, ordered results, dedup checked pre-dispatch; context.Manager made thread-safe — deadlock fixes + race-clean). **Identity**: Agent.Name (main / subagent:<provider>); subagent live streams flow through the parent observer source-tagged (Event.Source); REPL renders magenta `[subagent:zen]` prefixes, dashboard tags likewise, subagent done-events suppressed (the delegate tool result reports them). **Config**: top-level `subagent = "provider"` — delegates omitting `provider` route there (else inherit parent). Live-verified: parent→zen subagent round trip. |
 
+| D49 | **`ask` tool — the user's subagent model (ticket 17).** ONE agent; a "subagent" is a single API call to another provider/key — no nested loop, no tools, no memory, nothing persists. `ask {prompt, provider?}` — provider empty = config `subagent =` default, else parent's model; multiple ask calls in one response run in parallel (D48 dispatch). The full nested-agent `delegate` stays for research subtasks; `ask` is the pure model. Live-verified: parent zen (account 1) → two parallel asks to zen-2 (account 2 key) → OPINION-A OPINION-B. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

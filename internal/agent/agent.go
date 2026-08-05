@@ -65,6 +65,7 @@ type Agent struct {
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
 	a := &Agent{LLM: llm, registry: reg}
 	a.registry.Add(a.delegateTool())
+	a.registry.Add(a.askTool()) // D49: one-shot other-key call — the call IS the subagent
 	a.registry.Add(a.loadSkillTool())
 	return a
 }
