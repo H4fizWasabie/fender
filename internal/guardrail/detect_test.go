@@ -72,3 +72,15 @@ func TestDetect(t *testing.T) {
 		}
 	}
 }
+
+func TestDevNullRedirectNeverDestructive(t *testing.T) {
+	// D57: `> /dev/null` discards output — the null device is never a
+	// destructive target (it was flagged via the "dev" system root).
+	judge, _ := parseCmd(`git status > /dev/null 2>&1`)
+	findings := detect(judge, t.TempDir())
+	for _, f := range findings {
+		if f.cat == CatDestructiveFS {
+			t.Fatalf("dev/null redirect flagged destructive: %+v", f)
+		}
+	}
+}

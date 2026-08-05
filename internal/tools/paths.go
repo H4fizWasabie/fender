@@ -17,9 +17,17 @@ func inProject(projectDir, p string) (string, error) {
 	if !filepath.IsAbs(abs) {
 		abs = filepath.Join(projectDir, p)
 	}
-	abs = filepath.Clean(abs)
-	proj := filepath.Clean(projectDir)
-	if abs != proj && !strings.HasPrefix(abs, proj+"/") {
+	abs, err := filepath.Abs(abs)
+	if err != nil {
+		return "", err
+	}
+	proj, err := filepath.Abs(projectDir)
+	if err != nil {
+		return "", err
+	}
+	// compare absolute paths so a "." projectDir can't mis-reject
+	// ".fender/..." (Clean keeps no "./" prefix)
+	if abs != proj && !strings.HasPrefix(abs, proj+string(filepath.Separator)) {
 		return "", fmt.Errorf("path %q is outside the project directory %q", p, projectDir)
 	}
 	return abs, nil

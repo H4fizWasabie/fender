@@ -343,3 +343,8 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - pi-style context (D56): artifact machinery removed (inline everything), real token meter (CH/usage/window), cache-correct skill injection, /compact + near-limit warning
+
+### Fixed
+- Guardrail: `> /dev/null` never destructive (null device is not a target)
+- inProject: absolute-path compare — .fender/ files readable under "." projectDir
+- Vendored skill support files missed at root (ADR-FORMAT.md, DEEPENING.md, etc.)

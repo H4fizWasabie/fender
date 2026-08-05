@@ -149,6 +149,9 @@ func checkRedirect(fs []finding, r *syntax.Redirect, projectDir string) []findin
 	}
 	resolved := resolvePath(path, projectDir)
 	if isWriteOp(r.Op) {
+		if resolved == "/dev/null" {
+			return fs // writing to the null device discards output — never destructive
+		}
 		return classifyWriteTarget(fs, resolved, projectDir, "redirect "+path)
 	}
 	// read redirects: only secrets matter
