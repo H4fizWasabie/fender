@@ -271,3 +271,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Parallel subagent dispatch (D48): concurrent tool calls per turn (goroutines + join), context Manager thread-safe (deadlock fixes, race-clean)
 - Main vs subagent identity: source-tagged events ([subagent:zen]) in REPL + dashboard, live subagent streaming
 - Config `subagent = "provider"`: default provider for delegates without explicit provider
+
+### Changed
+- Wayfinder: ticket 16 resolved — parallel subagents live-verified with two different account keys (parent zen → subagents zen-2, SUB-A/SUB-B returned)
