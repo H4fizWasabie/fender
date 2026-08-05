@@ -232,9 +232,14 @@ func TestRunStallsWithoutProgress(t *testing.T) {
 }
 
 func TestRunOrientationOnToolError(t *testing.T) {
+	// D52: the first failing call errors; identical repeats hit the dedup
+	// cache ("[already executed]") — no re-execution. The repeat counter
+	// (not the error counter) triggers orientation.
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "read_file", `{"path":"nope.txt"}`),
 		toolReply("call_2", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_3", "read_file", `{"path":"nope.txt"}`),
+		toolReply("call_4", "read_file", `{"path":"nope.txt"}`),
 		completeReply("complete", "recovered"),
 	}}
 	a, _ := newTestAgent(t, f)
@@ -438,5 +443,40 @@ func TestToolCallsExecuteSequentiallyInModelOrder(t *testing.T) {
 	}
 	if got := strings.Join(order, ""); got != "abc" {
 		t.Fatalf("execution order = %q", got)
+	}
+}
+
+// D52: cosmetically different shell commands dedup to one execution.
+func TestShellCommandNormalizationDedups(t *testing.T) {
+	proj := t.TempDir()
+	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
+	fake := &fakeLLM{steps: []*provider.Response{
+		toolReply("c1", "shell", `{"command":"go test ./..."}`),
+		toolReply("c2", "shell", `{"command":"go test  ./... 2>&1 | tail -5"}`),
+		completeReply("complete", "done"),
+	}}
+	a := NewAgent(fake, reg)
+	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "run tests twice"}})
+	if res.Status != "complete" {
+		t.Fatalf("status = %q", res.Status)
+	}
+	got := lastToolResult(t, fake)
+	if !strings.Contains(got, "[already executed]") {
+		t.Fatalf("second call not deduped: %q", got)
+	}
+}
+
+func TestNormalizeCmd(t *testing.T) {
+	cases := map[string]string{
+		`go test ./...`:                    `go test ./...`,
+		`go test  ./... 2>&1`:              `go test ./...`,
+		`go test ./... | tail -5`:          `go test ./...`,
+		`echo "hi" > out.txt`:              `echo hi`,
+		`go test ./pkgA`:                   `go test ./pkgA`, // different target stays different
+	}
+	for in, want := range cases {
+		if got := normalizeCmd(in); got != want {
+			t.Fatalf("normalizeCmd(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

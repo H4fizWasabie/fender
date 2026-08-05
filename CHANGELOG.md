@@ -316,3 +316,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Settings save preserves provider path (dropping it re-broke /api/v1 providers like OpenRouter); path field shown in the settings form
+
+### Fixed
+- Runaway-loop (D52): shell commands normalized for dedup (cosmetic variants collapse), failing commands dedup too — the 505× go test loop is dead; thrash detection catches re-runs after ~3 variants

@@ -5,7 +5,9 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	ctxpkg "github.com/H4fizWasabie/fender/internal/context"
 	"github.com/H4fizWasabie/fender/internal/memory"
@@ -171,6 +173,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 				continue
 			}
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
+			if tc.Function.Name == "shell" {
+				key = "shell\x00" + normalizeCmd(commandArg(tc.Function.Arguments)) // D52: cosmetic variants dedup
+			}
 			if out, ok := dedup[key]; ok {
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "[already executed] " + out})
 				executedKey = key // repeat detection: cached calls are not progress
@@ -182,6 +187,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 			out, err := a.registry.Execute(ctx, tc.Function.Name, tc.Function.Arguments)
 			if err != nil {
 				errors++
+				dedup[key] = "Error: " + err.Error() // D52: repeated failing commands dedup too
 				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: "Error: " + err.Error()})
 				if a.Observer != nil {
 					a.Observer(Event{Kind: "tool", Text: tc.Function.Name, Status: "error", Detail: eventDetail(err.Error())})
@@ -301,4 +307,31 @@ func (a *Agent) finish(res *Result) *Result {
 
 func orientationMessage() provider.Message {
 	return provider.Message{Role: "user", Content: orientationPrompt}
+}
+
+// normalizeCmd strips shell cosmetics so near-identical commands share a
+// dedup key (D52): whitespace, quotes, and redirects/pipes are presentation,
+// not intent — "go test ./..." vs "go test  ./... 2>&1 | tail" are the same
+// command. This is what stops the obsessive re-run loop: the model's
+// variations collapse, dedup returns "[already executed]", and thrash
+// detection counts them as repeats.
+func normalizeCmd(s string) string {
+	s = strings.ReplaceAll(s, `"`, "")
+	s = strings.ReplaceAll(s, "'", "")
+	for _, sep := range []string{" 2>&1", " 2>", " >", " >>", " |"} {
+		if i := strings.Index(s, sep); i > 0 {
+			s = s[:i]
+		}
+	}
+	return strings.Join(strings.Fields(s), " ")
+}
+
+// commandArg extracts the shell tool's "command" argument from JSON args.
+func commandArg(argsJSON string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
+		return argsJSON
+	}
+	cmd, _ := args["command"].(string)
+	return cmd
 }
