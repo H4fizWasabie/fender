@@ -323,3 +323,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - fender init no longer writes a placeholder config that shadows the global ~/.fender/fender.toml (the "re-add your key" trap); prints providers-from-global instead
+
+### Fixed
+- fender init respects the global config: no placeholder config that shadows ~/.fender/fender.toml; template updated (correct base_url/path, current model)

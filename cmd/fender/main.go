@@ -199,20 +199,29 @@ func initProject(out io.Writer) error {
 	if err := mem.Ensure(); err != nil {
 		return err
 	}
+	// A local fender.toml with a placeholder key would SHADOW the user's
+	// real ~/.fender/fender.toml (the "why do I need to re-add my key" trap) —
+	// when a global config exists, init scaffolds the workspace only.
 	if _, err := os.Stat("fender.toml"); os.IsNotExist(err) {
-		template := `# Fender configuration (D25)
+		home, _ := os.UserHomeDir()
+		if _, err := os.Stat(filepath.Join(home, ".fender", "fender.toml")); err == nil {
+			fmt.Fprintln(out, "providers come from ~/.fender/fender.toml (create a local fender.toml only to override)")
+		} else {
+			template := `# Fender configuration (D25)
 mode = "balanced" # strict | balanced | yolo (D21)
 
 [providers.openrouter]
-base_url = "https://openrouter.ai/api/v1"
-api_key = "sk-or-v1-..."
-models = ["openai/gpt-4o-mini"]
-default_model = "openai/gpt-4o-mini"
+base_url = "https://openrouter.ai"
+path = "/api/v1"
+api_key = "PASTE-YOUR-OPENROUTER-KEY-HERE"
+models = ["deepseek/deepseek-v4-flash-0731"]
+default_model = "deepseek/deepseek-v4-flash-0731"
 `
-		if err := os.WriteFile("fender.toml", []byte(template), 0600); err != nil {
-			return err
+			if err := os.WriteFile("fender.toml", []byte(template), 0600); err != nil {
+				return err
+			}
+			fmt.Fprintln(out, "wrote fender.toml (edit api_key)")
 		}
-		fmt.Fprintln(out, "wrote fender.toml (edit api_key)")
 	}
 	if err := initIntel(out); err != nil {
 		return err
