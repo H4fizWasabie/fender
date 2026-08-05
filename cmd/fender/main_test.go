@@ -52,6 +52,8 @@ func TestRunCommand(t *testing.T) {
 }
 
 func TestInitCommand(t *testing.T) {
+	home := t.TempDir() // no global config here → template must be written
+	t.Setenv("HOME", home)
 	dir := t.TempDir()
 	wd, _ := os.Getwd()
 	defer os.Chdir(wd)

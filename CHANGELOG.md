@@ -326,3 +326,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - fender init respects the global config: no placeholder config that shadows ~/.fender/fender.toml; template updated (correct base_url/path, current model)
+
+### Fixed
+- init test: isolates HOME (no global config) so the template path is exercised; the global-config path covered by the new test
