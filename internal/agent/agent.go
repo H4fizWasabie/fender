@@ -75,6 +75,11 @@ func NewAgent(llm LLM, reg *tools.Registry) *Agent {
 }
 
 // subIter is the effective subagent iteration cap.
+// ToolNames exposes the registered tool names (used by wiring audits, D63).
+func (a *Agent) ToolNames() []string {
+	return a.registry.Names()
+}
+
 func (a *Agent) subIter() int {
 	if a.MaxSubIter > 0 {
 		return a.MaxSubIter

@@ -370,3 +370,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Prompt to pi parity (D62): minimal identity + 3 guidelines + config prompt_guidelines + cwd line; hardcoded sections removed (tool descriptions carry the knowledge)
+
+### Fixed
+- Wiring audit (D63): re-wired 3 features silently dropped by the D50 refactor — Anthropic dispatch (API field restored), intel_refresh tool registration, D45 always-on index refresh

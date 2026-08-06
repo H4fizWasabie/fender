@@ -118,6 +118,9 @@ func New(name string, p Provider) *Client {
 	}
 }
 
+// IsAnthropic reports whether the client uses the Messages API transport (D42).
+func (c *Client) IsAnthropic() bool { return c.anthropic != nil }
+
 func (c *Client) Name() string     { return c.name }
 func (c *Client) Model() string    { return c.model }
 func (c *Client) BaseURL() string  { return c.base }

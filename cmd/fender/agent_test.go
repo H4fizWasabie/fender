@@ -142,3 +142,54 @@ default_model = "m1"
 		t.Fatalf("config guideline missing: %q", a.System)
 	}
 }
+
+// D63 audit: the Anthropic adapter must be reachable via config dispatch.
+func TestAnthropicProviderDispatch(t *testing.T) {
+	cfg := writeConfig(t, `
+[providers.claude]
+base_url = "https://api.anthropic.com"
+api = "anthropic"
+api_key = "k"
+models = ["claude-sonnet"]
+default_model = "claude-sonnet"
+`)
+	reg, err := provider.Load(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, ok := reg.Client("claude")
+	if !ok {
+		t.Fatal("claude provider missing")
+	}
+	if !c.IsAnthropic() {
+		t.Fatal("anthropic transport not wired (D63)")
+	}
+}
+
+// D63 audit: the intel_refresh tool must be registered on the agent.
+func TestIntelRefreshToolRegistered(t *testing.T) {
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+	os.WriteFile(filepath.Join(dir, "fender.toml"), []byte(`
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`), 0600)
+	a, err := buildAgent(filepath.Join(dir, "fender.toml"), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, name := range a.ToolNames() {
+		if name == "intel_refresh" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("intel_refresh not registered (D63): %v", a.ToolNames())
+	}
+}

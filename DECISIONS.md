@@ -99,6 +99,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D62 | **Prompt = pi parity.** System prompt shrunk to pi's shape: identity + 3 always-on guidelines (conciseness, file paths, ask-in-prose) + user-extensible `prompt_guidelines` (fender.toml, pi promptGuidelines parity) + `Current working directory:` appended at build. Hardcoded TOOL USE/OUTPUT/AMBIGUITY/COMPLETION sections deleted — tool descriptions carry the tool knowledge, the loop enforces completion (D61). Tests pin: no sections, cwd present, config guidelines appended. |
 
+| D63 | **Wiring audit (ponytail-audit, 2026-08-05).** Zero dead production functions; test helpers fine. **Three unwired features found + re-wired** (silently dropped by the D50 refactor): (1) Anthropic adapter — `API` config field restored + registry dispatch; (2) `intel_refresh` tool — re-registered in buildAgent; (3) D45 automatic index — always-open store + build-time refresh restored (search is always symbol-aware). Pinning tests added (dispatch reachability, tool registration, `ToolNames` accessor). |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

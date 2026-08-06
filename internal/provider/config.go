@@ -16,6 +16,7 @@ type Config struct {
 type Provider struct {
 	BaseURL      string                 `toml:"base_url"`
 	APIKey       string                 `toml:"api_key"`
+	API          string                 `toml:"api"` // "openai" (default) | "anthropic" (D42)
 	Path         string                 `toml:"path"` // API path prefix, default "/v1" (OpenRouter: "/api/v1")
 	Models       []string               `toml:"models"`
 	DefaultModel string                 `toml:"default_model"`

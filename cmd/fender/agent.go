@@ -63,15 +63,17 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	}
 	audit := guardrail.NewAudit(auditF)
 
-	var searcher tools.Searcher
-	if _, err := os.Stat(filepath.Join(".fender", "codeintel", "graph.json")); err == nil {
-		if store, err := codeintel.Open("."); err == nil {
-			searcher = store.Searcher()
-		}
+	// D45 (re-wired by audit, D63): the code-intel store is ALWAYS open and
+	// refreshed once per session — search is always symbol-aware, never the
+	// silent dumb-walker fallback.
+	store, err := codeintel.Open(".")
+	if err != nil {
+		return nil, err
 	}
-	if searcher == nil {
-		searcher = tools.DefaultSearcher(".")
+	if _, err := store.Refresh(); err == nil {
+		store.Rebuild()
 	}
+	searcher := store.Searcher()
 
 	mem := memory.New(".")
 	regTools := tools.New(".", tools.ShellConfig{
@@ -80,6 +82,7 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 		Audit:      audit,
 		Approver:   approver,
 	}, searcher, mem.NestedRules) // D46: nested AGENTS.md on read/edit
+	regTools.Add(intelRefreshTool(store)) // D45 (re-wired): agent-callable index refresh
 
 	base, err := skills.Bundled()
 	if err != nil {

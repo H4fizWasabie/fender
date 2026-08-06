@@ -82,6 +82,9 @@ func build(cfg Config) *Registry {
 	}
 	for name, p := range cfg.Providers {
 		r.clients[name] = New(name, p)
+		if p.API == "anthropic" {
+			r.clients[name] = NewAnthropic(name, p) // D42: Messages API transport
+		}
 		r.explicit[name] = p.DefaultModel != ""
 		r.order = append(r.order, name)
 	}
