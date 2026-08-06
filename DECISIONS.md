@@ -95,6 +95,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D60 | **Streaming usage captured.** The SSE final chunk carries `usage` (prompt/completion/cached tokens) — the stream parser now merges it into the response, so the token meter (D56) gets REAL numbers on the streaming path (the dashboard always streams — this is why CH stayed at zero). Test pins the round trip incl. meter percent/CH. |
 
+| D61 | **Ticket 21 — pi-rewrite decisions (discussion locked, implementation pending).** Fender is a pi-style coding agent in Go, not a mino derivative. (1) **Universal end condition**: a response with no tool calls = done — the text IS the reply, turn ends; nag + protocol state deleted. (2) **complete_task removed entirely** — delegate children return final text; internal statuses (stalled/error/cancelled) stay for the harness. (3) **No mino file-claim verification** — the user is the verifier. (4) System prompt rewrite + tool-description enrichment in scope. **Kept**: guardrail, ICM memory, skills/ponytail, steering (D58), meter (D60), /compact, sessions, tool dedup (D52 stays). **Dropped**: consolidation (D43 removed — pure mino), artifact machinery (already gone). |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

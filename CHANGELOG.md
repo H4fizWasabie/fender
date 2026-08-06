@@ -361,3 +361,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Streaming usage (D60): final SSE chunk usage now reaches the meter — CH and token counters live on the dashboard streaming path
+
+### Added
+- Ticket 21 spec: pi-rewrite (D61) — universal end condition, complete_task removed, prompt + tool-description rewrite, consolidation dropped
