@@ -88,6 +88,18 @@ func (d *dashState) handleMessage(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, fmt.Errorf("task cannot be empty"))
 		return
 	}
+	d.mu.Lock()
+	busy := d.busy
+	d.mu.Unlock()
+	if busy {
+		// D58: a message while working is a STEER — delivered mid-run at the
+		// next safe boundary (pi-style interrupt-and-inject).
+		if d.agent != nil {
+			d.agent.Steer(body.Text)
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "steered"})
+		return
+	}
 	status, reply, err := d.run(r.Context(), body.Text)
 	if err != nil {
 		writeAPIError(w, http.StatusConflict, err)

@@ -89,6 +89,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D57 | **Harness bugs from live use (the "capture decision" stall).** (1) `> /dev/null` was flagged destructive — the null device's first segment is `dev`, a system root; the null device discards output, never destructive (exempted + test). (2) `inProject` rejected `.fender/` paths under a `"."` projectDir — Clean keeps no `./` prefix; now compares absolute paths (+ tests). (3) Skill vendoring dropped root-level support files (ADR-FORMAT.md etc.) — the model correctly wanted them but they weren't there; all non-SKILL.md files now vendored. After fixes the exact stalling message completes. |
 
+| D58 | **Steer mechanism (ticket 20, pi-style).** Type while Fender works: the message is queued (latest-wins), interrupts the in-flight LLM call (per-iteration ctx cancel via a watcher goroutine — leaked-watcher race fixed with iterDone), and is injected as a user message at the next iteration. Loop retries harmlessly on stale signals; completion wins over a pending steer (stays queued for the next run). Delivered steers are tracked and drained into session history (dashboard + REPL). Surfaces: dashboard POST while busy returns {"status":"steered"} (input stays live — UI rendering = Codex); REPL background reader steers during runs. 7 tests incl. interrupt-and-inject, mid-generation, latest-wins, pending-after-completion. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

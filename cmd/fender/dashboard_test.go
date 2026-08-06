@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/H4fizWasabie/fender/internal/agent"
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -497,4 +498,71 @@ default_model = "deepseek-v4-flash-free"
 	if !cfg.Providers["zen"].ModelConfigs["deepseek-v4-flash-free"].Thinking {
 		t.Fatal("thinking config not written")
 	}
+}
+
+// D58: a message while the run is busy is queued as a STEER, not rejected.
+func TestMessageWhileBusySteers(t *testing.T) {
+	cfg := writeConfig(t, `
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`)
+	d, err := newDashState(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// gate the agent's LLM so the run stays busy deterministically
+	gate := make(chan struct{})
+	d.agent.LLM = &gatedDashLLM{gate: gate}
+	d.agent.Observer = func(agent.Event) {}
+
+	done := make(chan struct{})
+	go func() {
+		d.run(context.Background(), "long task")
+		close(done)
+	}()
+	time.Sleep(200 * time.Millisecond) // let the run start
+
+	mux, err := newDashboardMux(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	var res map[string]string
+	postJSON(t, srv.URL+"/api/message", map[string]string{"text": "check the other folder first"}, &res)
+	if res["status"] != "steered" {
+		t.Fatalf("response = %+v", res)
+	}
+	close(gate)
+	<-done
+	// the steer must have reached the agent's history as a user message
+	found := false
+	for _, m := range d.history {
+		if m.Role == "user" && strings.Contains(m.Content, "check the other folder first") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("steer missing from history: %+v", d.history)
+	}
+}
+
+// gatedDashLLM blocks the first call until the gate closes, then completes.
+type gatedDashLLM struct {
+	gate chan struct{}
+}
+
+func (g *gatedDashLLM) Chat(ctx context.Context, req provider.Request) (*provider.Response, error) {
+	select {
+	case <-g.gate:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return &provider.Response{Choices: []provider.Choice{{Message: provider.Message{
+		Role: "assistant",
+		ToolCalls: []provider.ToolCall{{ID: "c", Type: "function", Function: provider.ToolFunction{Name: "complete_task", Arguments: `{"status":"complete","reply":"done"}`}}},
+	}}}}, nil
 }

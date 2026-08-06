@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/H4fizWasabie/fender/internal/agent"
+	"github.com/H4fizWasabie/fender/internal/provider"
 )
 
 func newDashState(cfgPath string) (*dashState, error) {
@@ -66,6 +67,13 @@ func (d *dashState) run(ctx context.Context, text string) (string, string, error
 	}
 
 	res := a.Run(ctx, msgs)
+	if st := a.DrainedSteers(); len(st) > 0 {
+		d.mu.Lock()
+		for _, s := range st {
+			d.history = append(d.history, provider.Message{Role: "user", Content: s}) // D58
+		}
+		d.mu.Unlock()
+	}
 	saved := d.finishTurn(res.Status, res.Reply)
 	if err := saveSession(&saved); err != nil {
 		d.failPersistence(fmt.Errorf("save completed session: %w", err))

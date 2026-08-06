@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/H4fizWasabie/fender/internal/memory"
 	"github.com/H4fizWasabie/fender/internal/provider"
@@ -56,6 +57,10 @@ type Agent struct {
 	MaxSubIter int              // 0 -> defaultMaxSubIter
 	Meter      *provider.Meter // real token accounting (D56); nil-safe
 	Observer   func(Event)      // renderer seam (ticket 08); nil-safe
+	steerMu    sync.Mutex
+	steer      string        // pending steering message (D58), latest-wins
+	steerCh    chan struct{} // signal: a steer arrived (buffered 1)
+	delivered  []string      // steers actually injected into the conversation
 	Mem        *memory.Memory   // D39 ICM memory workspace; nil = ticket-04 behavior
 	Skills     *skills.Registry // D27 skills; nil = ticket-05 behavior
 	registry   *tools.Registry
@@ -63,7 +68,7 @@ type Agent struct {
 
 // NewAgent wires llm to reg and registers the delegate tool (D13).
 func NewAgent(llm LLM, reg *tools.Registry) *Agent {
-	a := &Agent{LLM: llm, registry: reg}
+	a := &Agent{LLM: llm, registry: reg, steerCh: make(chan struct{}, 1)}
 	a.registry.Add(a.delegateTool())
 	a.registry.Add(a.loadSkillTool())
 	return a
@@ -133,9 +138,38 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		if ctx.Err() != nil {
 			return a.finish(&Result{Status: "cancelled", Reply: "cancelled", Iterations: i})
 		}
-		resp, err := a.chat(ctx, provider.Request{Messages: msgs, Tools: schemas})
+		if s := a.takeSteer(); s != "" {
+			msgs = append(msgs, provider.Message{Role: "user", Content: s}) // D58: delivered between iterations
+			a.recordSteer(s)
+		}
+		// D58 (pi-style): a steer interrupts the in-flight LLM call so the
+		// model sees it at its next turn without waiting for the batch to end.
+		iterCtx, cancelIter := context.WithCancel(ctx)
+		iterDone := make(chan struct{}) // closes the watcher when the iteration ends
+		if a.steerCh != nil {
+			go func() {
+				select {
+				case <-a.steerCh:
+					cancelIter()
+				case <-iterDone:
+				case <-ctx.Done():
+				}
+			}()
+		}
+		resp, err := a.chat(iterCtx, provider.Request{Messages: msgs, Tools: schemas})
+		cancelIter()
+		close(iterDone)
 		if err != nil {
-			return a.finish(&Result{Status: "error", Reply: fmt.Sprintf("(error: %v)", err), Iterations: i})
+			if ctx.Err() == nil {
+				// steer-interrupt (or a stale signal): deliver the pending
+				// message, then continue — the next call carries it
+				if s := a.takeSteer(); s != "" {
+					msgs = append(msgs, provider.Message{Role: "user", Content: s})
+					a.recordSteer(s)
+				}
+				continue
+			}
+			return a.finish(&Result{Status: "cancelled", Reply: "cancelled", Iterations: i})
 		}
 		if a.Meter != nil {
 			a.Meter.Record(resp.Usage) // D56: real token accounting per turn
@@ -292,6 +326,48 @@ func (a *Agent) loadSkillTool() tools.Tool {
 			return s.Body, nil
 		},
 	}
+}
+
+// Steer queues a mid-run user message (D58, pi-style): the loop delivers it
+// at the next safe boundary — interrupting the in-flight LLM call if one is
+// running. Latest-wins: a newer steer replaces a pending one.
+func (a *Agent) Steer(msg string) {
+	if msg == "" || a.steerCh == nil {
+		return
+	}
+	a.steerMu.Lock()
+	a.steer = msg
+	a.steerMu.Unlock()
+	select {
+	case a.steerCh <- struct{}{}:
+	default:
+	}
+}
+
+// recordSteer remembers a delivered steer so the session history can
+// include it (D58 — the dashboard and REPL drain it after the run).
+func (a *Agent) recordSteer(s string) {
+	a.steerMu.Lock()
+	a.delivered = append(a.delivered, s)
+	a.steerMu.Unlock()
+}
+
+// DrainedSteers returns and clears the steers delivered during the last run.
+func (a *Agent) DrainedSteers() []string {
+	a.steerMu.Lock()
+	defer a.steerMu.Unlock()
+	out := a.delivered
+	a.delivered = nil
+	return out
+}
+
+// takeSteer consumes and clears the pending steering message.
+func (a *Agent) takeSteer() string {
+	a.steerMu.Lock()
+	defer a.steerMu.Unlock()
+	s := a.steer
+	a.steer = ""
+	return s
 }
 
 // chat calls the LLM, streaming deltas through the observer when possible.

@@ -351,3 +351,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Default system prompt: conciseness directive — report milestones, not play-by-play (tool activity is already visible)
+
+### Added
+- Steer mechanism (D58, pi-style): type mid-run — interrupts the in-flight call, injected at the next iteration, latest-wins; dashboard + REPL; steers recorded in session history
