@@ -19,6 +19,8 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test ./...
+      - name: Wiring surface (reachability audit)
+        run: go test ./cmd/fender/ -run TestWiringSurface -v
       - name: Changelog check
         run: |
           # every commit must touch CHANGELOG.md (constitution rule)

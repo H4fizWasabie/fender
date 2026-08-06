@@ -101,6 +101,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D63 | **Wiring audit (ponytail-audit, 2026-08-05).** Zero dead production functions; test helpers fine. **Three unwired features found + re-wired** (silently dropped by the D50 refactor): (1) Anthropic adapter — `API` config field restored + registry dispatch; (2) `intel_refresh` tool — re-registered in buildAgent; (3) D45 automatic index — always-open store + build-time refresh restored (search is always symbol-aware). Pinning tests added (dispatch reachability, tool registration, `ToolNames` accessor). |
 
+| D64 | **Wiring surface test + CI step.** `TestWiringSurface` pins: full tool registry (read/edit/shell/search/delegate/load_skill/intel_refresh), config dispatch (fallback, anthropic, meter window, prompt guidelines + cwd), skill invocation on the bundled registry, and the CLI command surface. Runs as its own CI step (`Wiring surface (reachability audit)`). Any future silent unwiring fails in CI. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

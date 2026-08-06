@@ -373,3 +373,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Fixed
 - Wiring audit (D63): re-wired 3 features silently dropped by the D50 refactor — Anthropic dispatch (API field restored), intel_refresh tool registration, D45 always-on index refresh
+
+### Added
+- Wiring surface test (D64): pins tool registry, config dispatch, skills, CLI surface — runs as its own CI step
