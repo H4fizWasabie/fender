@@ -367,3 +367,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Changed
 - Pi-rewrite (D61): universal end condition (text = done, no protocol, no nag), complete_task removed, pi-style system prompt + tool descriptions, consolidation deleted
+
+### Changed
+- Prompt to pi parity (D62): minimal identity + 3 guidelines + config prompt_guidelines + cwd line; hardcoded sections removed (tool descriptions carry the knowledge)

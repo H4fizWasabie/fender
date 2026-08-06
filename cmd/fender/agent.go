@@ -15,24 +15,15 @@ import (
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
 
-const defaultSystem = `You are Fender, a coding agent working inside a repository. Work autonomously within your tools.
+// defaultSystem is pi-style minimal (D62): identity + a few always-on
+// guidelines. Tool-use knowledge lives in the tool descriptions; the loop
+// enforces completion (text = done); users extend via prompt_guidelines.
+const defaultSystem = `You are Fender, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
 
-TOOL USE
-- Prefer tools over guessing: read files before editing, run tests to verify, search before assuming.
-- Use read_file with offset and limit to fetch only the slices you need.
-- Use edit_file with a unique old_text; if it fails, read the file first.
-- Use the shell tool for commands; keep them simple and purposeful.
-- Delegate self-contained subtasks (research, investigation) to a child agent via delegate; the child's final text is its answer.
-
-OUTPUT STYLE
-- Be concise. Report meaningful milestones, decisions, failures, and when you need input — not a play-by-play.
-- The user can see your tool activity; prose should add information, not commentary.
-
-AMBIGUITY
-- If you need information from the user, ask in prose. The turn ends with your question; they will answer.
-
-COMPLETION
-- When the work is done, stop. Your final text is the answer. Do not narrate a summary of steps already visible; state the outcome.`
+Guidelines:
+- Be concise in your responses
+- Show file paths clearly when working with files
+- If you need information from the user, ask in prose and stop; they will answer`
 
 // buildAgent wires every subsystem from fender.toml (ticket-08 spec §5).
 // modeOverride nil → the config's mode; approver nil → ASK is denied.
@@ -56,10 +47,12 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	}
 	// D54/D56: loop cap + context window from the canonical config
 	var maxIterations, ctxWindow, reserveTokens int
+	var promptGuidelines []string
 	if cfg, err := provider.LoadConfig(cfgPath); err == nil {
 		maxIterations = cfg.MaxIterations
 		ctxWindow = cfg.ContextWindow
 		reserveTokens = cfg.ReserveTokens
+		promptGuidelines = cfg.PromptGuidelines
 	}
 
 	home, _ := os.UserHomeDir()
@@ -96,8 +89,15 @@ func buildAgent(cfgPath string, modeOverride *guardrail.Mode, approver func(cont
 	projSkills, _ := skills.Load(filepath.Join(".fender", "skills"))
 	regSkills := base.Merge(projSkills, userSkills)
 
+	system := defaultSystem
+	for _, g := range promptGuidelines {
+		system += "\n- " + g // D62: user-extensible guidelines (pi promptGuidelines parity)
+	}
+	if wd, err := os.Getwd(); err == nil {
+		system += "\n\nCurrent working directory: " + wd // D62: pi appends the cwd
+	}
 	a := agent.NewAgent(llm, regTools)
-	a.System = defaultSystem
+	a.System = system
 	a.Mem = mem
 	a.Skills = regSkills
 	a.MaxIter = maxIterations // D54: configurable loop cap (0 = 30)

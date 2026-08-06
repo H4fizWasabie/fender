@@ -97,6 +97,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D61 | **Ticket 21 — pi-rewrite (IMPLEMENTED).** Fender is a pi-style coding agent in Go. (1) **Universal end condition**: a response with no tool calls = done — the text IS the reply, turn ends; nag + protocol state deleted. (2) **complete_task removed entirely** (zero references in non-test code — acceptance criterion met); delegate children return their final text; internal statuses (stalled/error/cancelled) stay. (3) No mino file-claim verification — the user is the verifier. (4) System prompt rewritten (pi-style: tool use, output style, ambiguity, completion) + tool descriptions enriched (read/edit/shell/delegate when-why). (5) **Dropped**: consolidation (D43 deleted). **Kept**: guardrail, ICM memory, skills/ponytail, steering (D58), meter (D60), /compact, sessions, tool dedup (D52). A pure chat exchange is now exactly 1 user message → 1 model call → turn ends (test-enforced call count). |
 
+| D62 | **Prompt = pi parity.** System prompt shrunk to pi's shape: identity + 3 always-on guidelines (conciseness, file paths, ask-in-prose) + user-extensible `prompt_guidelines` (fender.toml, pi promptGuidelines parity) + `Current working directory:` appended at build. Hardcoded TOOL USE/OUTPUT/AMBIGUITY/COMPLETION sections deleted — tool descriptions carry the tool knowledge, the loop enforces completion (D61). Tests pin: no sections, cwd present, config guidelines appended. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

@@ -87,3 +87,58 @@ func TestIntelRefreshTool(t *testing.T) {
 		t.Fatalf("output = %q", out)
 	}
 }
+
+func TestSystemPromptHasCWDAndGuidelines(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+	os.WriteFile(filepath.Join(dir, "fender.toml"), []byte(`
+mode = "balanced"
+
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`), 0600)
+	a, err := buildAgent(filepath.Join(dir, "fender.toml"), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(a.System, "Current working directory: "+dir) {
+		t.Fatalf("system missing cwd: %q", a.System)
+	}
+	if strings.Contains(a.System, "TOOL USE") || strings.Contains(a.System, "COMPLETION") {
+		t.Fatal("hardcoded sections must be gone (D62)")
+	}
+	if !strings.Contains(a.System, "Be concise") {
+		t.Fatal("core guideline missing")
+	}
+}
+
+func TestPromptGuidelinesFromConfig(t *testing.T) {
+	dir := t.TempDir()
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+	os.WriteFile(filepath.Join(dir, "fender.toml"), []byte(`
+prompt_guidelines = ["always use gofmt before finishing"]
+mode = "balanced"
+
+[providers.mock]
+base_url = "http://localhost:1/v1"
+api_key = "k"
+models = ["m1"]
+default_model = "m1"
+`), 0600)
+	a, err := buildAgent(filepath.Join(dir, "fender.toml"), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(a.System, "always use gofmt before finishing") {
+		t.Fatalf("config guideline missing: %q", a.System)
+	}
+}

@@ -8,6 +8,7 @@ type Config struct {
 	MaxIterations int                 `toml:"max_iterations"` // agent loop cap, 0 = 30 (D54)
 	ContextWindow int                 `toml:"context_window"` // model context window in tokens, 0 = unknown (D56)
 	ReserveTokens int                 `toml:"reserve_tokens"` // tokens reserved for the reply, 0 = 16384 (D56)
+	PromptGuidelines []string         `toml:"prompt_guidelines"` // extra system-prompt guidelines (D62)
 	Providers     map[string]Provider `toml:"providers"`
 }
 
