@@ -24,7 +24,7 @@ func (s *streamFake) StreamChat(ctx context.Context, req provider.Request, onDel
 }
 
 func TestObserverNonStreaming(t *testing.T) {
-	fake := &fakeLLM{steps: []*provider.Response{textReply("thinking"), completeReply("complete", "done")}}
+	fake := &fakeLLM{steps: []*provider.Response{textReply("thinking")}}
 	a := NewAgent(fake, newTestRegistry(t))
 	var events []Event
 	a.Observer = func(e Event) { events = append(events, e) }
@@ -35,7 +35,7 @@ func TestObserverNonStreaming(t *testing.T) {
 			deltas = append(deltas, e.Text)
 		}
 	}
-	if len(deltas) != 2 || deltas[0] != "thinking" || deltas[1] != "" {
+	if len(deltas) != 1 || deltas[0] != "thinking" {
 		t.Fatalf("deltas = %v", deltas)
 	}
 	found := false

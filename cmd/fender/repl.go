@@ -100,7 +100,6 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 		if !ok { // EOF
 			fmt.Fprintln(out)
 			state.save()
-			state.distill()
 			return nil
 		}
 		if text == "" {
@@ -113,7 +112,6 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 			}
 			if quit {
 				state.save()
-				state.distill()
 				return nil
 			}
 			continue
@@ -163,7 +161,7 @@ func (st *replState) runTurn(out io.Writer, res *agent.Result) {
 		st.history = append(st.history, provider.Message{Role: "user", Content: s}) // D58
 	}
 	if !st.streamed && res.Reply != "" {
-		fmt.Fprintln(out, res.Reply) // answer arrived via complete_task args, not deltas
+		fmt.Fprintln(out, res.Reply) // answer arrived as the final text, not deltas
 	}
 	st.streamed = false
 	if st.agent.Meter != nil {
@@ -191,18 +189,6 @@ type replState struct {
 	streamed bool   // any delta shown this run (reply may duplicate)
 	session  *sessionFile
 	rebuild  func() error
-}
-
-// distill fires background consolidation at session end (D43).
-func (st *replState) distill() {
-	if st.session == nil || st.agent == nil {
-		return
-	}
-	if llm, ok := st.agent.LLM.(agentLLM); ok {
-		go func() {
-			consolidateSession(st.session, llm, ".")
-		}()
-	}
 }
 
 // save persists the current history (D41). Failures are non-fatal.
@@ -388,14 +374,16 @@ func compactHistory(st *replState) (int, error) {
 	}
 	old := st.history[:len(st.history)-keep]
 	tail := st.history[len(st.history)-keep:]
-	llm, ok := st.agent.LLM.(agentLLM)
+	llm, ok := st.agent.LLM.(interface {
+		Chat(ctx context.Context, req provider.Request) (*provider.Response, error)
+	})
 	if !ok {
 		return 0, fmt.Errorf("current LLM cannot summarize")
 	}
 	var sb strings.Builder
 	for _, m := range old {
 		if m.Role == "user" || m.Role == "assistant" {
-			fmt.Fprintf(&sb, "%s: %s\n", m.Role, truncate(m.Content, 400))
+			fmt.Fprintf(&sb, "%s: %s\n", m.Role, compactTruncate(m.Content, 400))
 		}
 	}
 	resp, err := llm.Chat(context.Background(), provider.Request{
@@ -421,3 +409,10 @@ const compactPrompt = `Summarize the earlier conversation of a coding-agent sess
 
 Earlier conversation:
 %s`
+
+func compactTruncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n]
+}

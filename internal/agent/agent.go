@@ -89,9 +89,10 @@ type Result struct {
 	Iterations int
 }
 
-// Run executes the flat loop until complete_task, a stall, an error, or
-// ctx cancellation. Flat by default; on thrash (tool errors, repeated same
-// call, no progress) it injects ONE orientation turn (D36).
+// Run executes the flat loop until the model responds with text (D61: text
+// without tool calls IS the completion), a stall, an error, or ctx
+// cancellation. On thrash (tool errors, repeated same call) it injects ONE
+// orientation turn (D36).
 func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 	system := a.System
 	if a.Mem != nil {
@@ -129,9 +130,9 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		maxIter = defaultMaxIter
 	}
 	dedup := map[string]string{} // D32 layer 1: tool dedup (whole run, mino behavior)
-	schemas := append(a.registry.Schemas(), completeSchema())
+	schemas := a.registry.Schemas()
 	oriented := false
-	var errors, repeats, noProgress int
+	var errors, repeats int
 	var lastKey string
 
 	for i := 1; i <= maxIter; i++ {
@@ -181,38 +182,10 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		msg := resp.Choices[0].Message
 		msgs = append(msgs, msg)
 
-		// Completion protocol (D37): only complete_task can end the turn.
-		if len(msg.ToolCalls) == 1 && msg.ToolCalls[0].Function.Name == completionToolName {
-			status, reply := completionArgs(msg.ToolCalls[0].Function.Arguments)
-			if (status == "complete" || status == "blocked") && reply != "" {
-				return a.finish(&Result{Status: status, Reply: reply, Iterations: i})
-			}
-			msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: msg.ToolCalls[0].ID, Content: completionError})
-			continue
-		}
-
+		// D61 (pi-rewrite): a response with no tool calls IS the completion —
+		// the text is the reply, the turn ends. No protocol, no nag.
 		if len(msg.ToolCalls) == 0 {
-			noProgress++
-			if !oriented && noProgress >= 3 {
-				msgs = append(msgs, orientationMessage())
-				oriented = true
-				noProgress = 0
-				continue
-			}
-			if oriented && noProgress >= 3 {
-				return a.finish(&Result{Status: "stalled", Reply: "(stopped: repeated responses without completing the task)", Iterations: i})
-			}
-			// Conversational escape (D53): a chat turn — an answer or a
-			// question back to the user — is a completed turn. If the model
-			// still hasn't called complete_task after two nags, accept its
-			// last prose as the answer instead of nagging forever (this is
-			// what locked the dashboard input while the model "waited").
-			if noProgress >= 2 {
-				return a.finish(&Result{Status: "complete", Reply: msg.Content, Iterations: i})
-			}
-			msgs = append(msgs, provider.Message{Role: "user",
-				Content: "Your previous response was pure text and did not end the turn. If you are answering the user conversationally or asking them a question, call complete_task ALONE with status complete (or blocked if you need their input) and your reply as the final message. Otherwise call the next tool."})
-			continue
+			return a.finish(&Result{Status: "complete", Reply: msg.Content, Iterations: i})
 		}
 
 		// Act: execute tool calls in model order; observe: feed results back.
@@ -221,10 +194,6 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		progress := false
 		var executedKey string
 		for _, tc := range msg.ToolCalls {
-			if tc.Function.Name == completionToolName {
-				msgs = append(msgs, provider.Message{Role: "tool", ToolCallID: tc.ID, Content: completionError})
-				continue
-			}
 			key := tc.Function.Name + "\x00" + canonicalArgs(tc.Function.Arguments)
 			if tc.Function.Name == "shell" {
 				key = "shell\x00" + normalizeCmd(commandArg(tc.Function.Arguments)) // D52: cosmetic variants dedup
@@ -259,7 +228,7 @@ func (a *Agent) Run(ctx context.Context, msgs []provider.Message) *Result {
 		// Adaptive OODA (D36): flat by default; ONE orientation turn on
 		// thrash; a successful tool call resets the episode.
 		if progress {
-			oriented, errors, repeats, noProgress = false, 0, 0, 0
+			oriented, errors, repeats = false, 0, 0
 			lastKey = ""
 			continue
 		}
@@ -426,4 +395,15 @@ func commandArg(argsJSON string) string {
 	}
 	cmd, _ := args["command"].(string)
 	return cmd
+}
+
+// canonicalArgs normalizes tool-call args so identical calls share a dedup
+// key regardless of JSON key order (D32 layer 1: tool dedup).
+func canonicalArgs(argsJSON string) string {
+	var v any
+	if err := json.Unmarshal([]byte(argsJSON), &v); err != nil {
+		return argsJSON
+	}
+	b, _ := json.Marshal(v)
+	return string(b)
 }

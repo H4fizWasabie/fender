@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,8 +61,8 @@ func toolReply(id, name, args string) *provider.Response {
 }
 
 func completeReply(status, reply string) *provider.Response {
-	args, _ := json.Marshal(map[string]string{"status": status, "reply": reply})
-	return toolReply("call_complete", completionToolName, string(args))
+	// kept for test compatibility — text end is the universal completion now
+	return textReply(reply)
 }
 
 // lastToolResult returns the last "tool"-role message content in the last request.
@@ -87,7 +86,7 @@ func newTestAgent(t *testing.T, f *fakeLLM) (*Agent, *tools.Registry) {
 }
 
 func TestRunCompletes(t *testing.T) {
-	f := &fakeLLM{steps: []*provider.Response{completeReply("complete", "all done")}}
+	f := &fakeLLM{steps: []*provider.Response{textReply("all done")}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "do the thing"}})
 	if res.Status != "complete" || res.Reply != "all done" || res.Iterations != 1 {
@@ -98,8 +97,8 @@ func TestRunCompletes(t *testing.T) {
 func TestRunDoesNotAccumulateBootstrapSystem(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
-		completeReply("complete", "first"),
-		completeReply("complete", "second"),
+		textReply("first"),
+		textReply("second"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -115,11 +114,12 @@ func TestRunDoesNotAccumulateBootstrapSystem(t *testing.T) {
 	}
 }
 
-func TestRunBlocked(t *testing.T) {
-	f := &fakeLLM{steps: []*provider.Response{completeReply("blocked", "need credentials")}}
+func TestRunTextQuestionEndsTurn(t *testing.T) {
+	// D61: a question in prose ends the turn — the user answers next turn.
+	f := &fakeLLM{steps: []*provider.Response{textReply("need credentials")}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
-	if res.Status != "blocked" || res.Reply != "need credentials" {
+	if res.Status != "complete" || res.Reply != "need credentials" {
 		t.Fatalf("res = %+v", res)
 	}
 }
@@ -129,7 +129,7 @@ func TestRunToolRoundTrip(t *testing.T) {
 	os.WriteFile(filepath.Join(proj, "a.txt"), []byte("hello world\n"), 0o644)
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "read_file", `{"path":"a.txt"}`),
-		completeReply("complete", "read it"),
+		textReply("read it"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -145,10 +145,13 @@ func TestRunToolRoundTrip(t *testing.T) {
 	for _, td := range req.Tools {
 		names[td.Function.Name] = true
 	}
-	for _, want := range []string{"read_file", "edit_file", "shell", "search", "complete_task"} {
+	for _, want := range []string{"read_file", "edit_file", "shell", "search"} {
 		if !names[want] {
 			t.Fatalf("schema missing %q", want)
 		}
+	}
+	if names["complete_task"] {
+		t.Fatal("complete_task must not be in the schemas (D61 pi-rewrite)")
 	}
 }
 
@@ -158,7 +161,7 @@ func TestRunDedup(t *testing.T) {
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "read_file", `{"path":"a.txt"}`),
 		toolReply("call_2", "read_file", `{"path":"a.txt"}`),
-		completeReply("complete", "ok"),
+		textReply("ok"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -181,7 +184,7 @@ func TestRunDedup(t *testing.T) {
 func TestRunUnknownTool(t *testing.T) {
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "no_such_tool", `{}`),
-		completeReply("complete", "ok"),
+		textReply("ok"),
 	}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
@@ -193,43 +196,26 @@ func TestRunUnknownTool(t *testing.T) {
 	}
 }
 
-func TestRunRejectsInvalidCompletion(t *testing.T) {
-	f := &fakeLLM{steps: []*provider.Response{
-		completeReply("sideways", ""), // invalid status + empty reply
-		completeReply("complete", "now it's done"),
-	}}
+func TestRunRejectsEmptyResponse(t *testing.T) {
+	f := &fakeLLM{steps: []*provider.Response{textReply("")}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
-	if res.Status != "complete" || res.Reply != "now it's done" {
+	if res.Status != "error" {
 		t.Fatalf("res = %+v", res)
-	}
-	if got := lastToolResult(t, f); !strings.Contains(got, "complete_task") {
-		t.Fatalf("result = %q", got)
 	}
 }
 
-func TestRunAcceptsConversationalProse(t *testing.T) {
-	// D53: pure-prose turns are CHAT answers — after two nags the harness
-	// accepts the last prose instead of stalling (this is what locked the
-	// dashboard input while the model "waited" for the user).
-	f := &fakeLLM{steps: []*provider.Response{
-		textReply("Question 1: what do the PDFs look like?"),
-		textReply("Question 1: what do the PDFs look like?"),
-		textReply("Question 1: what do the PDFs look like?"),
-	}}
+func TestRunProseEndsImmediately(t *testing.T) {
+	// D61: prose ends the turn on the FIRST response — no nags, no extra
+	// calls (this replaces D53's escape, which needed two nags).
+	f := &fakeLLM{steps: []*provider.Response{textReply("Question 1: what do the PDFs look like?")}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
-	if res.Status != "complete" {
-		t.Fatalf("status = %q (want complete)", res.Status)
+	if res.Status != "complete" || res.Reply != "Question 1: what do the PDFs look like?" {
+		t.Fatalf("res = %+v", res)
 	}
-	if res.Reply != "Question 1: what do the PDFs look like?" {
-		t.Fatalf("reply = %q", res.Reply)
-	}
-	// the conversational escape must have fired WITHOUT an orientation turn
-	for _, m := range f.last().Messages {
-		if strings.Contains(m.Content, "orientation turn") {
-			t.Fatal("orientation must not fire for conversational prose")
-		}
+	if len(f.all()) != 1 {
+		t.Fatalf("model called %d times, want 1", len(f.all()))
 	}
 }
 
@@ -242,7 +228,7 @@ func TestRunOrientationOnToolError(t *testing.T) {
 		toolReply("call_2", "read_file", `{"path":"nope.txt"}`),
 		toolReply("call_3", "read_file", `{"path":"nope.txt"}`),
 		toolReply("call_4", "read_file", `{"path":"nope.txt"}`),
-		completeReply("complete", "recovered"),
+		textReply("recovered"),
 	}}
 	a, _ := newTestAgent(t, f)
 	res := a.Run(context.Background(), nil)
@@ -268,7 +254,7 @@ func TestRunOrientationOnRepeatedCall(t *testing.T) {
 		toolReply("call_2", "read_file", `{"path":"a.txt"}`),
 		toolReply("call_3", "read_file", `{"path":"a.txt"}`),
 		toolReply("call_4", "read_file", `{"path":"a.txt"}`),
-		completeReply("complete", "ok"),
+		textReply("ok"),
 	}}
 	proj := t.TempDir()
 	os.WriteFile(filepath.Join(proj, "a.txt"), []byte("x"), 0o644)
@@ -322,7 +308,7 @@ func TestRunMaxIter(t *testing.T) {
 }
 
 func TestRunSystemPrompt(t *testing.T) {
-	f := &fakeLLM{steps: []*provider.Response{completeReply("complete", "ok")}}
+	f := &fakeLLM{steps: []*provider.Response{textReply("ok")}}
 	a, _ := newTestAgent(t, f)
 	a.System = "be good"
 	res := a.Run(context.Background(), nil)
@@ -341,7 +327,7 @@ func TestRunKeepsLargeOutputInline(t *testing.T) {
 	proj := t.TempDir()
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
-		completeReply("complete", "done"),
+		textReply("done"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -366,7 +352,7 @@ func TestRunReadFileStaysInline(t *testing.T) {
 	}
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "read_file", `{"path":"big.txt"}`),
-		completeReply("complete", "ok"),
+		textReply("ok"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Balanced, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -384,7 +370,7 @@ func TestRunDedupReplaysOutputInline(t *testing.T) {
 	f := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
 		toolReply("call_2", "shell", `{"command":"printf 'y%.0s' {1..18000}"}`),
-		completeReply("complete", "ok"),
+		textReply("ok"),
 	}}
 	reg := tools.New(proj, tools.ShellConfig{Mode: guardrail.Yolo, ProjectDir: proj}, nil)
 	a := NewAgent(f, reg)
@@ -405,7 +391,7 @@ func TestRunDedupReplaysOutputInline(t *testing.T) {
 
 func TestRunKeepsLargeUserInputInline(t *testing.T) {
 	// D56: the user's full input reaches the model — no HEAD/TAIL.
-	f := &fakeLLM{steps: []*provider.Response{completeReply("complete", "ok")}}
+	f := &fakeLLM{steps: []*provider.Response{textReply("ok")}}
 	a, _ := newTestAgent(t, f)
 	big := strings.Repeat("t", 30000)
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: big}})
@@ -439,7 +425,7 @@ func TestToolCallsExecuteSequentiallyInModelOrder(t *testing.T) {
 	}}}}
 	fake := &fakeLLM{steps: []*provider.Response{
 		multi,
-		completeReply("complete", "done"),
+		textReply("done"),
 	}}
 	a := NewAgent(fake, reg)
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "probe thrice"}})
@@ -458,7 +444,7 @@ func TestShellCommandNormalizationDedups(t *testing.T) {
 	fake := &fakeLLM{steps: []*provider.Response{
 		toolReply("c1", "shell", `{"command":"go test ./..."}`),
 		toolReply("c2", "shell", `{"command":"go test  ./... 2>&1 | tail -5"}`),
-		completeReply("complete", "done"),
+		textReply("done"),
 	}}
 	a := NewAgent(fake, reg)
 	res := a.Run(context.Background(), []provider.Message{{Role: "user", Content: "run tests twice"}})

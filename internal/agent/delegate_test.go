@@ -54,18 +54,19 @@ func TestDelegateEmptyPrompt(t *testing.T) {
 	}
 }
 
-func TestDelegateBlocked(t *testing.T) {
+func TestDelegateChildTextIsAnswer(t *testing.T) {
+	// D61: the child's final text is the tool result — no blocked ceremony.
 	llm := &fakeLLM{steps: []*provider.Response{
 		toolReply("call_1", "delegate", `{"prompt":"do it"}`),
-		completeReply("blocked", "need access"),
-		completeReply("complete", "parent handled it"),
+		textReply("need access"),
+		textReply("parent handled it"),
 	}}
 	a, _ := newTestAgent(t, llm)
 	res := a.Run(context.Background(), nil)
 	if res.Status != "complete" {
 		t.Fatalf("status = %q", res.Status)
 	}
-	if got := lastToolResult(t, llm); !strings.Contains(got, "[delegate blocked] need access") {
+	if got := lastToolResult(t, llm); !strings.Contains(got, "[delegate complete] need access") {
 		t.Fatalf("tool result = %q", got)
 	}
 }

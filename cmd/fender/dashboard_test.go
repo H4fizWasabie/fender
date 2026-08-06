@@ -50,11 +50,7 @@ type dashFakeLLM struct{}
 
 func (d *dashFakeLLM) Chat(ctx context.Context, req provider.Request) (*provider.Response, error) {
 	return &provider.Response{Choices: []provider.Choice{{Message: provider.Message{
-		Role: "assistant",
-		ToolCalls: []provider.ToolCall{{
-			ID: "call_c", Type: "function",
-			Function: provider.ToolFunction{Name: "complete_task", Arguments: `{"status":"complete","reply":"hi there"}`},
-		}},
+		Role: "assistant", Content: "hi there",
 	}}}}, nil
 }
 
@@ -562,7 +558,6 @@ func (g *gatedDashLLM) Chat(ctx context.Context, req provider.Request) (*provide
 		return nil, ctx.Err()
 	}
 	return &provider.Response{Choices: []provider.Choice{{Message: provider.Message{
-		Role: "assistant",
-		ToolCalls: []provider.ToolCall{{ID: "c", Type: "function", Function: provider.ToolFunction{Name: "complete_task", Arguments: `{"status":"complete","reply":"done"}`}}},
+		Role: "assistant", Content: "done",
 	}}}}, nil
 }

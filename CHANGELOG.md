@@ -364,3 +364,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Ticket 21 spec: pi-rewrite (D61) — universal end condition, complete_task removed, prompt + tool-description rewrite, consolidation dropped
+
+### Changed
+- Pi-rewrite (D61): universal end condition (text = done, no protocol, no nag), complete_task removed, pi-style system prompt + tool descriptions, consolidation deleted

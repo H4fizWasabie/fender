@@ -20,7 +20,7 @@ func readTool(projectDir string, ruleLoader ...func(dir string) string) Tool {
 	}
 	return Tool{
 		Name:        "read_file",
-		Description: "Read a file inside the project directory. Optional 1-based offset and limit select a line range; the full file is read when omitted.",
+		Description: "Read a file inside the project directory. Use offset and limit (1-based) to fetch only the line range you need instead of the whole file — prefer slices for large files. Read before editing, and re-read after edits to verify.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

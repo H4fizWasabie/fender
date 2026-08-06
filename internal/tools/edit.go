@@ -15,7 +15,7 @@ func editTool(projectDir string, ruleLoader ...func(dir string) string) Tool {
 	}
 	return Tool{
 		Name:        "edit_file",
-		Description: "Replace a unique occurrence of old_text with new_text in a file inside the project directory.",
+		Description: "Replace a unique occurrence of old_text with new_text in a file. old_text must match EXACTLY once — include enough surrounding context to be unique. If it fails, read the file first to see the actual content. Verify edits by reading the result.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

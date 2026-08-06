@@ -9,7 +9,7 @@ import (
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
 
-const subagentSystem = "You are an ephemeral subagent of the Fender coding agent. Work on exactly the task you are given, using the available tools. When done, call complete_task alone with status complete and the final answer. If you need something only the parent can provide, call complete_task with status blocked and the exact blocker. Do not ask questions."
+const subagentSystem = "You are an ephemeral subagent of the Fender coding agent. Work on exactly the task you are given, using the available tools. When the task is done, stop — your final text is the answer the parent receives. If you need something only the parent can provide, say so in your final text. Do not ask questions."
 
 // delegateTool is D13/D50: child-agent-as-a-tool. The same Agent type runs
 // synchronously with fresh context and returns its final reply as the tool
@@ -17,7 +17,7 @@ const subagentSystem = "You are an ephemeral subagent of the Fender coding agent
 func (a *Agent) delegateTool() tools.Tool {
 	return tools.Tool{
 		Name:        "delegate",
-		Description: "Run an ephemeral child agent (the same loop, fresh context and working memory) on one self-contained subtask. The child cannot delegate and returns only its final reply.",
+		Description: "Run an ephemeral child agent (the same loop, fresh context and working memory) on ONE self-contained subtask: research, investigation, or a bounded change. The child cannot delegate; its final text is the answer. Give it a complete, self-contained prompt — it has no memory of this conversation.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
