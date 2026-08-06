@@ -354,3 +354,7 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 
 ### Added
 - Steer mechanism (D58, pi-style): type mid-run — interrupts the in-flight call, injected at the next iteration, latest-wins; dashboard + REPL; steers recorded in session history
+
+### Added
+- User-invoked skills (D59): "/skill task..." in dashboard + REPL — body injected inline; unknown skills error; builtin slashes unchanged
+- REPL: D58 steer loop landed (was REPL-only-missing), runTurn shared with skill invocations

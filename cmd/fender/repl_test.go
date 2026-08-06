@@ -37,8 +37,8 @@ func TestReplUnknownSlash(t *testing.T) {
 	if err := repl(&out, &errOut, in, "", ""); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out.String(), "unknown command") {
-		t.Fatalf("expected unknown-command error: %q", out.String())
+	if !strings.Contains(out.String(), "unknown skill") && !strings.Contains(out.String(), "unknown command") {
+		t.Fatalf("expected unknown-command/skill error: %q", out.String())
 	}
 }
 

@@ -91,6 +91,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D58 | **Steer mechanism (ticket 20, pi-style).** Type while Fender works: the message is queued (latest-wins), interrupts the in-flight LLM call (per-iteration ctx cancel via a watcher goroutine — leaked-watcher race fixed with iterDone), and is injected as a user message at the next iteration. Loop retries harmlessly on stale signals; completion wins over a pending steer (stays queued for the next run). Delivered steers are tracked and drained into session history (dashboard + REPL). Surfaces: dashboard POST while busy returns {"status":"steered"} (input stays live — UI rendering = Codex); REPL background reader steers during runs. 7 tests incl. interrupt-and-inject, mid-generation, latest-wins, pending-after-completion. |
 
+| D59 | **User-invoked skills everywhere.** One primitive: `/skill task...` — parses the name, looks it up in the registry, composes `[skill: name]\n<body>\n\ntask` as the user message. Works in the dashboard input, the REPL, anywhere text enters. Unknown skills error on both surfaces (was: silently run as a task). Builtin slash commands (/quit /help /model /mode /thinking /compact /skills) still route to the harness. The REPL also gained the D58 steer loop + runTurn extraction (reply-duplication guard via state.streamed). |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

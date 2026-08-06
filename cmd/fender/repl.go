@@ -14,6 +14,7 @@ import (
 	"github.com/H4fizWasabie/fender/internal/guardrail"
 	"github.com/H4fizWasabie/fender/internal/provider"
 	"github.com/H4fizWasabie/fender/internal/skills"
+	
 )
 
 // repl is the interactive loop (D26): slash commands + Agent.Run with
@@ -40,7 +41,6 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 		fmt.Fprintf(out, "resumed session %s (%d messages)\n", prev.ID, len(prev.Messages))
 	}
 	state.session = &sessionFile{ID: newSessionID(), Started: time.Now().Format(time.RFC3339)}
-	var streamed bool // any delta shown this run (reply may duplicate)
 	state.rebuild = func() error {
 		approver := func(_ context.Context, cmd, reason string) (bool, error) {
 			fmt.Fprintf(out, "\n  [approval] %s\n  %s [y/N] ", reason, cmd)
@@ -56,7 +56,7 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 		}
 		a.Observer = func(e agent.Event) {
 			if e.Kind == "delta" && e.Text != "" {
-				streamed = true
+				state.streamed = true
 			}
 			renderEvent(out, e, state.thinking != "")
 		}
@@ -72,6 +72,19 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 	signal.Notify(sig, os.Interrupt)
 	defer signal.Stop(sig)
 
+	// D58: background reader feeds idle tasks and mid-run steers alike.
+	inputCh := make(chan string)
+	go func() {
+		for {
+			line, err := in.ReadString('\n')
+			if err != nil { // EOF
+				close(inputCh)
+				return
+			}
+			inputCh <- strings.TrimSpace(line)
+		}
+	}()
+
 	for {
 		model := "?"
 		if state.agent != nil {
@@ -83,14 +96,13 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 			}
 		}
 		fmt.Fprintf(out, "\x1b[2m[%s %s]\x1b[0m > ", state.mode, model)
-		line, err := in.ReadString('\n')
-		if err != nil { // EOF
+		text, ok := <-inputCh
+		if !ok { // EOF
 			fmt.Fprintln(out)
 			state.save()
 			state.distill()
 			return nil
 		}
-		text := strings.TrimSpace(line)
 		if text == "" {
 			continue
 		}
@@ -120,26 +132,52 @@ func repl(out, errOut io.Writer, in *bufio.Reader, cfgPath, resumeID string) err
 			case <-done:
 			}
 		}()
-		res := state.agent.Run(ctx, state.history)
-		close(done)
-		cancel()
-		if !streamed && res.Reply != "" {
-			fmt.Fprintln(out, res.Reply) // answer arrived via complete_task args, not deltas
-		}
-		streamed = false
-		if state.agent.Meter != nil {
-			m := state.agent.Meter.Summary()
-			fmt.Fprintf(out, "\x1b[2m[CH%.1f%% %.1f%%/%s", m["cache_hit_rate"], m["usage_percent"], formatWindow(m["window"].(int)))
-			if near, _ := m["near_limit"].(bool); near {
-				fmt.Fprint(out, " ⚠ near limit — /compact or /quit to a new session")
+		runDone := make(chan *agent.Result, 1)
+		go func() {
+			runDone <- state.agent.Run(ctx, state.history)
+		}()
+		// while running: input becomes a steer (D58, pi-style)
+		for {
+			select {
+			case res := <-runDone:
+				close(done)
+				cancel()
+				state.runTurn(out, res)
+				goto nextTurn
+			case steer := <-inputCh:
+				if steer == "" {
+					continue
+				}
+				state.agent.Steer(steer)
+				fmt.Fprintln(out, "(steer queued — reaches Fender after the current action)")
 			}
-			fmt.Fprintln(out, "]\x1b[0m")
 		}
-		if res.Status == "complete" || res.Status == "blocked" {
-			state.history = append(state.history, provider.Message{Role: "assistant", Content: res.Reply})
-		}
-		state.save() // persist after every turn (D41)
+	nextTurn:
 	}
+}
+
+// runTurn renders one finished run and persists it (shared by the main
+// loop and /skill invocations, D59).
+func (st *replState) runTurn(out io.Writer, res *agent.Result) {
+	for _, s := range st.agent.DrainedSteers() {
+		st.history = append(st.history, provider.Message{Role: "user", Content: s}) // D58
+	}
+	if !st.streamed && res.Reply != "" {
+		fmt.Fprintln(out, res.Reply) // answer arrived via complete_task args, not deltas
+	}
+	st.streamed = false
+	if st.agent.Meter != nil {
+		m := st.agent.Meter.Summary()
+		fmt.Fprintf(out, "\x1b[2m[CH%.1f%% %.1f%%/%s", m["cache_hit_rate"], m["usage_percent"], formatWindow(m["window"].(int)))
+		if near, _ := m["near_limit"].(bool); near {
+			fmt.Fprint(out, " ⚠ near limit — /compact or /quit to a new session")
+		}
+		fmt.Fprintln(out, "]\x1b[0m")
+	}
+	if res.Status == "complete" || res.Status == "blocked" {
+		st.history = append(st.history, provider.Message{Role: "assistant", Content: res.Reply})
+	}
+	st.save() // persist after every turn (D41)
 }
 
 // replState carries the REPL's mutable state between turns.
@@ -150,6 +188,7 @@ type replState struct {
 	skills   *skills.Registry
 	history  []provider.Message
 	thinking string // "" = hidden (off); non-empty = show dimmed
+	streamed bool   // any delta shown this run (reply may duplicate)
 	session  *sessionFile
 	rebuild  func() error
 }
@@ -266,6 +305,18 @@ func slash(out io.Writer, text string, st *replState) (bool, error) {
 		fmt.Fprint(out, st.skills.Descriptions())
 		return false, nil
 	default:
+		// D59: "/skill task..." — user-invoked skills (tdd, code-review, ...)
+		if st.agent != nil {
+			if composed, isSkill, err := skillTask(st.agent, text); isSkill {
+				if err != nil {
+					return false, err
+				}
+				st.history = append(st.history, provider.Message{Role: "user", Content: composed})
+				res := st.agent.Run(context.Background(), st.history)
+				st.runTurn(out, res)
+				return false, nil
+			}
+		}
 		return false, fmt.Errorf("unknown command %q (try /help)", parts[0])
 	}
 }

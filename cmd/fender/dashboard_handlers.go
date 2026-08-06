@@ -88,6 +88,14 @@ func (d *dashState) handleMessage(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, fmt.Errorf("task cannot be empty"))
 		return
 	}
+	// D59: "/skill task..." injects the skill body into the turn
+	if composed, isSkill, err := skillTask(d.agent, body.Text); isSkill {
+		if err != nil {
+			writeAPIError(w, http.StatusBadRequest, err)
+			return
+		}
+		body.Text = composed
+	}
 	d.mu.Lock()
 	busy := d.busy
 	d.mu.Unlock()
