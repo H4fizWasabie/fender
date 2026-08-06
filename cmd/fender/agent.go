@@ -15,7 +15,9 @@ import (
 	"github.com/H4fizWasabie/fender/internal/tools"
 )
 
-const defaultSystem = `You are Fender, a coding agent. Work autonomously within your tools. When the task is done, call complete_task with the final reply.`
+const defaultSystem = `You are Fender, a coding agent. Work autonomously within your tools. When the task is done, call complete_task with the final reply.
+
+Communication style: be concise. Do not narrate every action — report only meaningful milestones, decisions, failures, and when you need input. The user can see your tool activity; prose should add information, not commentary.`
 
 // buildAgent wires every subsystem from fender.toml (ticket-08 spec §5).
 // modeOverride nil → the config's mode; approver nil → ASK is denied.

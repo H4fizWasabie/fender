@@ -348,3 +348,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 - Guardrail: `> /dev/null` never destructive (null device is not a target)
 - inProject: absolute-path compare — .fender/ files readable under "." projectDir
 - Vendored skill support files missed at root (ADR-FORMAT.md, DEEPENING.md, etc.)
+
+### Changed
+- Default system prompt: conciseness directive — report milestones, not play-by-play (tool activity is already visible)
