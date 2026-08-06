@@ -195,6 +195,7 @@ type streamChunk struct {
 			ToolCalls        []ToolCall `json:"tool_calls"`
 		} `json:"delta"`
 	} `json:"choices"`
+	Usage *Usage `json:"usage"` // final chunk carries real token accounting (D60)
 }
 
 func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), onThinking ...func(string)) (*Response, error) {
@@ -244,6 +245,9 @@ func (c *Client) Stream(ctx context.Context, req Request, onDelta func(string), 
 		var chunk streamChunk
 		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
 			continue // ignore malformed keep-alive chunks
+		}
+		if chunk.Usage != nil {
+			out.Usage = *chunk.Usage // D60: the meter needs real numbers from streaming too
 		}
 		for _, ch := range chunk.Choices {
 			if len(out.Choices) == 0 {

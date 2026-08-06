@@ -93,6 +93,8 @@ Project: **Fender** (directory: `~/Desktop/Fender`). Append-only decisions; late
 
 | D59 | **User-invoked skills everywhere.** One primitive: `/skill task...` — parses the name, looks it up in the registry, composes `[skill: name]\n<body>\n\ntask` as the user message. Works in the dashboard input, the REPL, anywhere text enters. Unknown skills error on both surfaces (was: silently run as a task). Builtin slash commands (/quit /help /model /mode /thinking /compact /skills) still route to the harness. The REPL also gained the D58 steer loop + runTurn extraction (reply-duplication guard via state.streamed). |
 
+| D60 | **Streaming usage captured.** The SSE final chunk carries `usage` (prompt/completion/cached tokens) — the stream parser now merges it into the response, so the token meter (D56) gets REAL numbers on the streaming path (the dashboard always streams — this is why CH stayed at zero). Test pins the round trip incl. meter percent/CH. |
+
 ## Open Questions
 
 - Q1–Q4, Q6: **resolved** (memory layers → D14/D17, guardrail → D21–24, config format → D25, terminal UX → D26, repo name → Fender)

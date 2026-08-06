@@ -358,3 +358,6 @@ All notable changes to Fender. Every commit MUST update this file (enforced by `
 ### Added
 - User-invoked skills (D59): "/skill task..." in dashboard + REPL — body injected inline; unknown skills error; builtin slashes unchanged
 - REPL: D58 steer loop landed (was REPL-only-missing), runTurn shared with skill invocations
+
+### Fixed
+- Streaming usage (D60): final SSE chunk usage now reaches the meter — CH and token counters live on the dashboard streaming path
